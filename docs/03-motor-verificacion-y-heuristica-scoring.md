@@ -37,6 +37,16 @@ Si el usuario fuerza la evaluación sin datos mínimos, el veredicto resultante 
 
 ---
 
+### Lectura automática de la captura (OCR)
+
+Para no obligar al estudiante a tipear todo en la ventana de minutos (Hallazgo 2), la Pantalla 3 lee el texto de la captura que sube y propone completar el formulario.
+
+- **Dónde corre:** en el navegador, con tesseract.js 6.0.1 (WebAssembly en un Web Worker) y el modelo de español `best_int` (~2 MB). Los archivos se sirven desde el propio sitio (`/ocr/tesseract-6.0.1/`, copiados por `scripts/copy-ocr-assets.mjs`): **la captura no sale del dispositivo** y no se llama a ningún servicio externo. Se descargan solo la primera vez que alguien sube una captura.
+- **Arquitectura:** puerto `ImageTextReader` (dominio) → adaptador `TesseractImageTextReader` (infraestructura). El texto lo interpreta `ListingTextExtractor` (dominio puro, testeado): alquiler y seña según la palabra clave más cercana (ignora expensas y montos en dólares), CBU/CVU de 22 dígitos con **verificación de los dígitos de control del BCRA**, alias, teléfono (incluye links `wa.me`), nombre después de "titular/a nombre de/dueño", link del aviso, zona por palabras clave y frases de "seña antes de ver la propiedad".
+- **El estudiante decide:** se muestran los datos detectados y solo se cargan al tocar "Completar el formulario con estos datos" (con "Deshacer"). La antigüedad de la cuenta y la cantidad de fotos no se pueden leer de una captura.
+- **CSP:** requiere `'wasm-unsafe-eval'` (compilar WebAssembly; no habilita `eval` de JavaScript) y `data:` en `connect-src` (el motor carga su WebAssembly embebido desde un `data:` URL; no sale a la red).
+- **Medido (27/10/2026):** sobre capturas sintéticas de chat y de aviso, la lectura tarda ~2 s y extrajo correctamente alquiler, seña, alias/CBU, teléfono, nombre, zona y el pedido de seña antes de ver. Una foto sin texto devuelve "No encontramos datos claros". **No está medido sobre capturas reales** de WhatsApp/Marketplace (fondos de color, emojis, texto chico): es lo próximo a validar.
+
 ## 3. Los 3 Pasos del Motor de Verificación (Pantalla 5)
 
 ### Paso 1 de 3: Data Mining de Imágenes y Anuncios Duplicados (`ImageMiningService`)

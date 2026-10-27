@@ -9,12 +9,20 @@ import {
   Sparkles,
   ScanSearch,
   Loader2,
+  ScanText,
+  WandSparkles,
+  Undo2,
 } from 'lucide-react';
 import {
   DataQualityCheckResult,
   ListingInput,
 } from '../../domain/entities/types';
 import { ImageHasher } from '../../domain/ports/ImageHasher';
+import { ImageTextReader } from '../../domain/ports/ImageTextReader';
+import {
+  ExtractedListingData,
+  ListingTextExtractor,
+} from '../../domain/services/ListingTextExtractor';
 import {
   DEFAULT_DHASH_MATCH_THRESHOLD,
   DHASH_BITS,
@@ -24,6 +32,7 @@ import {
   KNOWN_IMAGE_SIGNATURES,
   QUICK_DEMO_SCENARIOS,
   UNIVERSITY_ZONES,
+  ZONE_KEYWORDS,
 } from '../../infrastructure/data/datasets';
 
 interface Screen3InputProps {
@@ -32,6 +41,54 @@ interface Screen3InputProps {
   onSubmitToQualityGate: () => void;
   onBack: () => void;
   imageHasher: ImageHasher<Blob>;
+  textReader: ImageTextReader<Blob>;
+}
+
+const textExtractor = new ListingTextExtractor(ZONE_KEYWORDS);
+
+type OcrState =
+  | { status: 'idle' }
+  | { status: 'reading'; progress: number }
+  | { status: 'done'; data: ExtractedListingData }
+  | { status: 'applied'; data: ExtractedListingData; previous: ListingInput }
+  | { status: 'error'; message: string };
+
+const ARS = (value: number) => `$${value.toLocaleString('es-AR')}`;
+
+/** Filas legibles de lo que encontró el OCR, en el orden del formulario. */
+function describeExtracted(data: ExtractedListingData): { label: string; value: string }[] {
+  const zone = UNIVERSITY_ZONES.find((z) => z.id === data.zoneId);
+  const rows: { label: string; value: string | undefined }[] = [
+    { label: 'Link', value: data.listingUrl },
+    { label: 'Zona', value: zone ? `${zone.city} — ${zone.neighborhood}` : undefined },
+    { label: 'Alquiler mensual', value: data.monthlyRentArs ? ARS(data.monthlyRentArs) : undefined },
+    { label: 'Seña', value: data.depositRequestedArs ? ARS(data.depositRequestedArs) : undefined },
+    { label: 'Nombre', value: data.ownerName },
+    { label: 'Teléfono', value: data.ownerPhone },
+    { label: 'CBU / CVU / Alias', value: data.cbuOrAlias },
+    {
+      label: 'Pide seña antes de ver',
+      value: data.requestsAdvanceBeforeVisit ? 'Sí (según el texto)' : undefined,
+    },
+  ];
+  return rows.filter((row): row is { label: string; value: string } => Boolean(row.value));
+}
+
+/** Aplica al formulario solo los campos que el OCR encontró. */
+function applyExtracted(input: ListingInput, data: ExtractedListingData): ListingInput {
+  const keepsUrl = input.listingUrlOrCapture && !input.listingUrlOrCapture.startsWith('captura://');
+  return {
+    ...input,
+    listingUrlOrCapture:
+      data.listingUrl && !keepsUrl ? data.listingUrl : input.listingUrlOrCapture,
+    zoneId: data.zoneId ?? input.zoneId,
+    monthlyRentArs: data.monthlyRentArs ?? input.monthlyRentArs,
+    depositRequestedArs: data.depositRequestedArs ?? input.depositRequestedArs,
+    ownerName: data.ownerName ?? input.ownerName,
+    ownerPhone: data.ownerPhone ?? input.ownerPhone,
+    cbuOrAlias: data.cbuOrAlias ?? input.cbuOrAlias,
+    requestsAdvanceBeforeVisit: data.requestsAdvanceBeforeVisit || input.requestsAdvanceBeforeVisit,
+  };
 }
 
 type HashingState =
@@ -45,11 +102,13 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
   onSubmitToQualityGate,
   onBack,
   imageHasher,
+  textReader,
 }) => {
   // El hash es asíncrono: guardamos el último input para no pisar lo que se tipeó mientras tanto.
   const latestInput = useRef(input);
   latestInput.current = input;
   const [hashing, setHashing] = useState<HashingState>({ status: 'idle' });
+  const [ocr, setOcr] = useState<OcrState>({ status: 'idle' });
 
   const perceptualMatch = input.uploadedImageDHash
     ? findClosestPerceptualMatch(input.uploadedImageDHash, KNOWN_IMAGE_SIGNATURES)
@@ -73,6 +132,8 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
         input.listingUrlOrCapture || `captura://${file.name}`,
     });
 
+    void readCaptureText(file);
+
     setHashing({ status: 'hashing' });
     try {
       const dHash = await imageHasher.hash(file);
@@ -88,6 +149,23 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
       });
     }
   };
+
+  const readCaptureText = async (file: File) => {
+    setOcr({ status: 'reading', progress: 0 });
+    try {
+      const text = await textReader.read(file, (progress) =>
+        setOcr({ status: 'reading', progress })
+      );
+      setOcr({ status: 'done', data: textExtractor.extract(text) });
+    } catch {
+      setOcr({
+        status: 'error',
+        message: 'No pudimos leer el texto de la imagen. Completá los datos a mano.',
+      });
+    }
+  };
+
+  const extractedRows = ocr.status === 'done' || ocr.status === 'applied' ? describeExtracted(ocr.data) : [];
 
   return (
     <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -162,7 +240,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
               Adjuntar foto o captura (opcional)
             </label>
             <span className="mb-1 block text-xs text-slate-500">
-              Se compara contra fotos ya reportadas
+              Leemos el texto y comparamos la foto
             </span>
             <label
               htmlFor="capture-upload"
@@ -184,6 +262,104 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
             </label>
           </div>
         </div>
+
+        {ocr.status !== 'idle' && (
+          <div
+            aria-live="polite"
+            className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-3 text-xs text-slate-800"
+          >
+            <p className="flex items-center gap-1.5 font-bold text-slate-900">
+              <ScanText className="h-4 w-4 text-indigo-700" aria-hidden="true" />
+              Datos leídos de la captura (OCR en tu navegador)
+            </p>
+
+            {ocr.status === 'reading' && (
+              <div className="mt-2">
+                <p className="flex items-center gap-1.5">
+                  <Loader2 className="h-3.5 w-3.5 motion-safe:animate-spin" aria-hidden="true" />
+                  {ocr.progress > 0
+                    ? `Leyendo el texto… ${Math.round(ocr.progress * 100)}%`
+                    : 'Preparando el lector (la primera vez descarga ~2 MB)…'}
+                </p>
+                <progress
+                  className="mt-1 h-1.5 w-full"
+                  max={1}
+                  value={ocr.progress}
+                  aria-label="Progreso de lectura de la captura"
+                />
+              </div>
+            )}
+
+            {ocr.status === 'error' && (
+              <p className="mt-1 font-semibold text-red-700">{ocr.message}</p>
+            )}
+
+            {(ocr.status === 'done' || ocr.status === 'applied') && extractedRows.length === 0 && (
+              <p className="mt-1">
+                No encontramos datos claros en la imagen (puede ser una foto sin texto o una
+                captura borrosa). Completá los campos a mano.
+              </p>
+            )}
+
+            {(ocr.status === 'done' || ocr.status === 'applied') && extractedRows.length > 0 && (
+              <>
+                <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+                  {extractedRows.map((row) => (
+                    <div key={row.label} className="flex gap-1.5">
+                      <dt className="text-slate-600">{row.label}:</dt>
+                      <dd className="break-all font-semibold">{row.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {ocr.data.cbuChecksumValid === false && (
+                  <p className="mt-2 font-semibold text-red-700">
+                    El CBU/CVU leído no pasa la verificación de dígitos del BCRA: o el OCR leyó
+                    mal un número, o la cuenta no existe. Compará con la captura.
+                  </p>
+                )}
+                {ocr.data.foreignCurrencyDetected && (
+                  <p className="mt-2 font-semibold text-amber-900">
+                    Hay montos en dólares: el precio en pesos completalo a mano.
+                  </p>
+                )}
+                {ocr.status === 'done' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOcr({ status: 'applied', data: ocr.data, previous: latestInput.current });
+                      onChange(applyExtracted(latestInput.current, ocr.data));
+                    }}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 font-bold text-white hover:bg-indigo-700"
+                  >
+                    <WandSparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                    Completar el formulario con estos datos
+                  </button>
+                ) : (
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <p className="font-semibold text-emerald-800">
+                      Listo: revisá cada campo antes de seguir, el OCR puede equivocarse.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onChange(ocr.previous);
+                        setOcr({ status: 'done', data: ocr.data });
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 font-semibold text-slate-700 hover:bg-white"
+                    >
+                      <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      Deshacer
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+            <p className="mt-2 text-[11px] text-slate-600">
+              La lectura es automática y aproximada. La antigüedad de la cuenta y la cantidad de
+              fotos no se pueden leer de una captura: completalas vos.
+            </p>
+          </div>
+        )}
 
         <div
           aria-live="polite"

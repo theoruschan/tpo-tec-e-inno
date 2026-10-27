@@ -235,6 +235,26 @@ export const INITIAL_FRAUD_DIRECTORY: FraudDirectoryEntry[] = [
   },
 ];
 
+/**
+ * Formulario vacío para una verificación nueva. La antigüedad de la cuenta arranca en 12
+ * meses (valor neutro: no suma ni resta riesgo) hasta que el estudiante la complete.
+ */
+export const EMPTY_LISTING_INPUT: ListingInput = {
+  listingUrlOrCapture: '',
+  zoneId: 'caba-monserrat-uade',
+  monthlyRentArs: 0,
+  depositRequestedArs: 0,
+  ownerName: '',
+  ownerPhone: '',
+  cbuOrAlias: '',
+  accountAgeMonths: 12,
+  photoCount: 0,
+  imageSignatureHash: '',
+  requestsAdvanceBeforeVisit: false,
+  isRegisteredRealEstate: false,
+  authorizedProcessing: false,
+};
+
 export interface QuickDemoScenario {
   id: string;
   badge: string;
@@ -339,3 +359,18 @@ export const QUICK_DEMO_SCENARIOS: QuickDemoScenario[] = [
     },
   },
 ];
+
+/**
+ * Palabras clave para reconocer la zona en el texto de una captura (OCR).
+ * Se comparan sin tildes ni mayúsculas; gana la que aparece primero en el texto.
+ */
+export const ZONE_KEYWORDS: Record<string, string[]> = {
+  'caba-monserrat-uade': ['monserrat', 'montserrat', 'san telmo', 'uade', 'lima 7'],
+  'caba-palermo': ['palermo', 'plaza italia'],
+  'caba-recoleta': ['recoleta', 'barrio norte'],
+  'caba-balvanera': ['balvanera', 'congreso', 'almagro'],
+  'caba-caballito': ['caballito', 'parque centenario'],
+  'cba-nueva-cordoba': ['nueva cordoba', 'ciudad universitaria', 'unc ', 'cordoba capital'],
+  'laplata-centro': ['la plata', 'plaza paso', 'unlp'],
+  'rosario-centro': ['rosario', 'pichincha', 'unr'],
+};

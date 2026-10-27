@@ -5,23 +5,26 @@
   "description": "CuartoSeguro — Motor de verificación preventiva de alquileres estudiantiles (Data Mining + BI + Directorio CBU y Reportes Cruzados). Trabajo Práctico Grupo 12 UADE.",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "node scripts/copy-ocr-assets.mjs && vite",
+    "build": "node scripts/copy-ocr-assets.mjs && tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "ocr:assets": "node scripts/copy-ocr-assets.mjs"
   },
   "dependencies": {
     "jspdf": "2.5.2",
     "lucide-react": "^0.475.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tesseract.js": "6.0.1"
   },
   "devDependencies": {
     "@eslint/js": "9.17.0",
     "@tailwindcss/vite": "^4.0.6",
+    "@tesseract.js-data/spa": "1.0.0",
     "@testing-library/dom": "10.4.0",
     "@testing-library/react": "16.1.0",
     "@testing-library/user-event": "14.5.2",

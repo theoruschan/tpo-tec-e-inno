@@ -28,6 +28,7 @@ El resultado es un veredicto (`Anuncio sospechoso` / `Verificado` / `Sin datos s
 | Parte | Estado |
 | :--- | :--- |
 | Motor de reglas, control de calidad, veredicto y confianza | **Real**, determinístico y testeado. Las reglas y umbrales son heurísticos, calibrados a mano. |
+| Lectura de la captura (OCR) | **Real**, en el navegador con tesseract.js (la captura no sale del dispositivo). Propone precio, seña, CBU/alias (valida los dígitos del CBU), teléfono, nombre, link y zona; el estudiante confirma. Probado con capturas sintéticas, todavía no con capturas reales de WhatsApp/Marketplace. |
 | Huella perceptual de la foto (dHash) | **Real**, se calcula en el navegador (la foto no sale del dispositivo). |
 | Base de fotos conocidas | **Semilla de 5 fotos.** No es una búsqueda en toda la web ni en los portales en vivo. Una captura de pantalla completa puede no coincidir; conviene subir la foto o un recorte. |
 | Precios promedio por zona | **Datos semilla** cargados a mano para el TP, no un relevamiento actualizado. |
@@ -48,7 +49,7 @@ pnpm install
 pnpm dev          # servidor de desarrollo
 pnpm lint         # ESLint
 pnpm typecheck    # TypeScript estricto
-pnpm test         # Vitest (107 tests)
+pnpm test         # Vitest (121 tests)
 pnpm build        # build de producción en dist/
 pnpm preview      # sirve dist/ localmente
 ```

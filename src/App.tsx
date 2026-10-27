@@ -13,6 +13,7 @@ import {
 import { DataQualityValidator } from './domain/services/DataQualityValidator';
 import { createFraudDirectoryRepository } from './infrastructure/createFraudDirectoryRepository';
 import {
+  EMPTY_LISTING_INPUT,
   INITIAL_FRAUD_DIRECTORY,
   KNOWN_IMAGE_SIGNATURES,
   QUICK_DEMO_SCENARIOS,
@@ -20,6 +21,7 @@ import {
 } from './infrastructure/data/datasets';
 import { EXPERIMENT_30_REAL_LISTINGS } from './infrastructure/data/experiment30Listings';
 import { BrowserImageHasher } from './infrastructure/image/BrowserImageHasher';
+import { TesseractImageTextReader } from './infrastructure/ocr/TesseractImageTextReader';
 import { JsPdfReportExporter } from './infrastructure/report/JsPdfReportExporter';
 import { LocalRepository } from './infrastructure/storage/LocalRepository';
 import { Navbar } from './presentation/components/Navbar';
@@ -66,6 +68,7 @@ const fraudRepository = createFraudDirectoryRepository(import.meta.env);
 const benchmarkUseCase = new RunExperimentBenchmarkUseCase();
 const imageHasher = new BrowserImageHasher();
 const pdfExporter = new JsPdfReportExporter();
+const textReader = new TesseractImageTextReader();
 const datasetParser = new ParseExperimentDatasetUseCase(UNIVERSITY_ZONES.map((z) => z.id));
 const CURATED_DATASET_NAME = 'Dataset curado del TP (30 casos ilustrativos)';
 
@@ -98,9 +101,9 @@ export const App: React.FC = () => {
     LocalRepository.getVerificationHistory()
   );
 
-  const [draftInput, setDraftInput] = useState<ListingInput>(
-    () => QUICK_DEMO_SCENARIOS[0].input
-  );
+  const [draftInput, setDraftInput] = useState<ListingInput>(() => ({
+    ...EMPTY_LISTING_INPUT,
+  }));
 
   const [activeResult, setActiveResult] = useState<VerificationResult>(
     () => history[0]
@@ -231,6 +234,7 @@ export const App: React.FC = () => {
             onBack={() => setCurrentScreen('screen-2-instructions')}
             onSubmitToQualityGate={() => setCurrentScreen('screen-4-quality')}
             imageHasher={imageHasher}
+            textReader={textReader}
           />
         )}
 
