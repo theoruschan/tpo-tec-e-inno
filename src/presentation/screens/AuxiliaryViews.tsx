@@ -15,6 +15,7 @@ import {
   FraudDirectoryEntry,
   VerificationResult,
 } from '../../domain/entities/types';
+import { formatDateTime } from '../utils/formatDateTime';
 
 interface HistoryViewProps {
   history: VerificationResult[];
@@ -85,7 +86,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                     {item.verdict} ({item.confidenceLevel}% confianza)
                   </span>
                   <span className="text-xs text-slate-400">
-                    {new Date(item.createdAt).toLocaleString('es-AR')}
+                    {formatDateTime(item.createdAt)}
                   </span>
                 </div>
 

@@ -16,6 +16,7 @@ import {
 import { VerificationResult } from '../../domain/entities/types';
 import { PriceComparisonChart } from '../components/PriceComparisonChart';
 import { SupportDialog } from '../components/SupportDialog';
+import { formatDateTime } from '../utils/formatDateTime';
 
 interface Screen7DetailsProps {
   result: VerificationResult;
@@ -318,7 +319,7 @@ export const Screen8Report: React.FC<Screen8ReportProps> = ({
   const handleShareWithFamily = async () => {
     const summaryText = [
       `🛡️ *Reporte CuartoSeguro (${result.id})*`,
-      `• Fecha: ${new Date(result.createdAt).toLocaleString('es-AR')}`,
+      `• Fecha: ${formatDateTime(result.createdAt)}`,
       `• Anuncio: ${result.input.listingUrlOrCapture}`,
       `• Zona: ${result.priceComparison.zone.neighborhood} (${result.priceComparison.zone.city})`,
       `• Veredicto: *${result.verdict.toUpperCase()}* (Confianza: ${result.confidenceLevel}%)`,
@@ -351,7 +352,7 @@ export const Screen8Report: React.FC<Screen8ReportProps> = ({
             </h1>
             <p className="mt-1 text-xs text-slate-500">
               ID Reporte: <strong>{result.id}</strong> · Emitido el{' '}
-              {new Date(result.createdAt).toLocaleString('es-AR')}
+              {formatDateTime(result.createdAt)}
             </p>
           </div>
 
