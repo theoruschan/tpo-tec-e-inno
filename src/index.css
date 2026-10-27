@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@layer base {
+  /* Modern Web Guidance: Validation styling only after user interaction (:user-invalid) */
+  input:user-invalid,
+  select:user-invalid,
+  textarea:user-invalid {
+    border-color: #dc2626;
+    background-color: #fef2f2;
+  }
+
+  /* Modern Web Guidance: Native dialog backdrop & modal styling without overriding closed display */
+  dialog::backdrop {
+    background-color: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(3px);
+  }
+}
+
+/* Optimización de impresión / descarga PDF para Pantalla 8 (Reporte) */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .print-container {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    margin: 0 !important;
+    padding: 1.5rem !important;
+    max-width: 100% !important;
+  }
+}

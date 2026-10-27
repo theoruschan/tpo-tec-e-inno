@@ -1,0 +1,102 @@
+# 03 — Motor de Verificación y Heurística de Scoring (ADR-003)
+
+**Estado:** Aprobado  
+**Contexto:** Entregable 2 (*Mapa de Oportunidad Tecnológica: "Data mining [búsqueda inversa de imágenes y anuncios duplicados] más BI [precio vs. promedio de zona]; no requiere IA compleja en el primer MVP"*) y Entregable 3 (*Customer Journey y Prototipo de 8 Pantallas*).
+
+---
+
+## 1. Principio de Diseño: IA / Heurística Explicable (White-Box Scoring)
+
+El **Mapa de Oportunidad Tecnológica** establece explícitamente:
+> *"La capacidad elegida es data mining más BI: no hace falta inteligencia artificial compleja para esta primera versión."*
+
+Además, la **Pantalla 6** y la **Pantalla 7** del prototipo exigen mostrar:
+- Un **Veredicto claro**: `Anuncio sospechoso` | `Verificado` | `Sin datos suficientes`.
+- Un **Nivel de confianza** expresado en porcentaje (ej. `82%`).
+- Un **Motivo principal** legible por humanos (ej. *"Esta foto aparece en otro anuncio con un precio distinto"*).
+- El **desglose individual** de cada alerta en la pantalla de detalles.
+
+Por lo tanto, diseñamos un **Motor de Scoring Heurístico y Estadístico Explicable** dividido en un **Control de Calidad Previo (Paso 0)** y **Tres Pilares de Verificación (Pasos 1, 2 y 3)**.
+
+---
+
+## 2. Paso 0: Control Automático de Calidad de los Datos (Data Quality Gate)
+
+Corresponde a la **Pantalla 4 ("Revisando lo que enviaste")**. Antes de emitir un juicio sobre la veracidad del aviso, el motor evalúa tres dimensiones de completitud:
+
+1. **Link o captura legible (`isLinkOrCaptureValid`):**
+   - Verifica que exista una URL válida de portal/red social (`zonaprop`, `argenprop`, `mercadolibre`, `facebook`, `instagram`, etc.) o una captura/descripción con longitud suficiente.
+2. **Datos de contacto del propietario disponibles (`hasContactInfo`):**
+   - Verifica que el estudiante haya provisto al menos un identificador trazable del locador o inmobiliaria: **Nombre completo / Razón social**, **Teléfono / WhatsApp** o **CBU / CVU / Alias bancario**.
+   - **Regla bloqueante del prototipo:** Si no hay ningún dato de contacto/identidad, el sistema emite el mensaje exacto requerido:
+     > *"No podemos verificar este anuncio sin datos de contacto del propietario. Pedile el nombre completo o el teléfono antes de continuar."*
+3. **Fotos del anuncio suficientes para comparar (`hasSufficientPhotos`):**
+   - Evalúa si el anuncio cuenta con al menos 2 fotografías o un hash/identificador de imagen para ejecutar la búsqueda inversa.
+
+Si el usuario fuerza la evaluación sin datos mínimos, el veredicto resultante es **`Sin datos suficientes`**, recomendando **"Pedir más información"** antes de transferir dinero.
+
+---
+
+## 3. Los 3 Pasos del Motor de Verificación (Pantalla 5)
+
+### Paso 1 de 3: Data Mining de Imágenes y Anuncios Duplicados (`ImageMiningService`)
+Simula y ejecuta la búsqueda inversa de fotografías y el cruce de texto/URL contra una base de anuncios indexados:
+
+- **Coincidencia exacta de imagen en otro anuncio con distinto precio o ciudad (`DUPLICATE_PHOTO_DIFFERENT_LISTING`):**
+  - *Impacto en riesgo:* **+45 puntos de riesgo** (Alerta Crítica).
+  - *Motivo generado:* `"Esta foto aparece en otro anuncio con un precio distinto o en otra plataforma (ej. alquiler temporario / Airbnb / otro barrio)."`
+- **Imagen de catálogo genérico o stock inmobiliario (`STOCK_OR_REUSED_PHOTO`):**
+  - *Impacto en riesgo:* **+25 puntos de riesgo** (Alerta Media).
+- **Escasez extrema de fotos (1 sola foto en un pedido de seña inmediata):**
+  - *Impacto en riesgo:* **+15 puntos de riesgo**.
+- **Fotos consistentes y sin duplicados sospechosos detectados:**
+  - *Impacto en confianza positiva:* Evidencia de autenticidad visual.
+
+---
+
+### Paso 2 de 3: Business Intelligence (BI) de Precios por Zona (`ZonePriceBiService`)
+Compara el alquiler mensual publicado ($P_{\text{anuncio}}$) y la seña solicitada ($S_{\text{anuncio}}$) contra las métricas históricas de la zona universitaria seleccionada ($\mu_{\text{zona}}$, $\sigma_{\text{zona}}$, rango intercuartil):
+
+$$\text{Desvío Porcentual} = \frac{P_{\text{anuncio}} - \mu_{\text{zona}}}{\mu_{\text{zona}}} \times 100$$
+
+$$\text{Ratio de Seña} = \frac{S_{\text{anuncio}}}{P_{\text{anuncio}}} \times 100$$
+
+- **Precio "Demasiado bueno para ser real" ($\text{Desvío} \le -35\%$ respecto al promedio zonal):**
+  - *Impacto en riesgo:* **+35 puntos de riesgo** (Alerta Crítica).
+  - *Motivo generado:* `"El precio publicado está un X% por debajo del promedio de la zona, un patrón clásico de aviso anzuelo para captar señas rápidas."`
+- **Precio moderadamente bajo ($-35\% < \text{Desvío} \le -22\%$):**
+  - *Impacto en riesgo:* **+18 puntos de riesgo** (Alerta Preventiva).
+- **Seña desproporcionada o exigida sin visita previa ($\text{Ratio de Seña} > 50\%$ del mes o presión de urgencia extrema):**
+  - *Impacto en riesgo:* **+15 puntos de riesgo**.
+- **Precio dentro de la banda normal de mercado ($|\text{Desvío}| < 22\%$):**
+  - *Resultado BI:* Consistente con valores de mercado para estudiantes en esa zona universitaria.
+
+---
+
+### Paso 3 de 3: Identidad, Reportes Cruzados y Directorio de CBU/Alias (`IdentityCbuMatcher`)
+Implementa la combinación de las **Alternativas 1, 6 y 11** de la Matriz de Priorización:
+
+1. **Cruce contra el Directorio Colaborativo de CBU / CVU / Alias Fraudulentos (Alternativa 11):**
+   - Normaliza el CBU (22 dígitos) o Alias ingresado y lo busca en la base colaborativa de cuentas denunciadas.
+   - Si existe coincidencia (`CBU_BLACKLISTED`): **+60 puntos de riesgo** (Alerta Crítica determinante).
+2. **Bot de Reportes Cruzados por Teléfono / Link / Anuncio (Alternativa 6):**
+   - Verifica si el teléfono de contacto o la URL del anuncio acumula reportes previos de otros estudiantes en grupos de facultad o ciudades universitarias.
+   - Si registra reportes previos (`CROSS_REPORTED_CONTACT`): **+45 puntos de riesgo**.
+3. **Verificación de Identidad y Antigüedad de Cuenta / Registros Públicos (Alternativa 1):**
+   - Cruza el nombre del propietario o matrícula de inmobiliaria (ej. CUCICBA / CPCPI / Colegio de Martilleros) y evalúa señales de cuenta recién creada sin historial o discrepancia entre el nombre del titular del CBU y el supuesto locador (`IDENTITY_MISMATCH` o `NEW_UNVERIFIED_ACCOUNT`): **+20 a +30 puntos de riesgo**.
+   - Si pertenece a una inmobiliaria matriculada o titular verificado con coincidencia bancaria: reduce el riesgo y eleva la confianza del veredicto.
+
+---
+
+## 4. Cálculo del Veredicto, Nivel de Confianza y Recomendación
+
+El motor acumula un `riskScore` acotado en $[0, 100]$ y un indicador de completitud de datos `completenessScore` en $[0, 100]$:
+
+| Condición | Veredicto (`verdict`) | Nivel de Confianza (`confidenceLevel`) | Recomendación (`recommendation`) |
+| :--- | :--- | :--- | :--- |
+| Faltan datos esenciales (sin contacto o sin precio/imagen legible) | **`Sin datos suficientes`** | $35\% - 55\%$ (según datos presentes) | **Pedir más información** |
+| `riskScore >= 40` o al menos 1 Alerta Crítica (Foto robada, CBU denunciado o Precio anzuelo extremo) | **`Anuncio sospechoso`** | $\min(98\%, 65\% + \lfloor \text{riskScore} \times 0.32 \rfloor)$ (ej. **82%** en caso típico de foto duplicada + precio bajo) | **No transferir** |
+| `25 <= riskScore < 40` (señales grises sin evidencia concluyente) | **`Sin datos suficientes`** | $55\% - 68\%$ | **Pedir más información** |
+| `riskScore < 25` y datos de contacto/fotos completos | **`Verificado`** | $\min(96\%, 78\% + \text{bono de validación registral})$ | **Transferir (con recaudos habituales)** |
+
+> **Nota sobre el ejemplo del Prototipo (Pantalla 6):** Cuando un anuncio presenta una foto duplicada en otro aviso con distinto precio y un desvío de precio bajo el promedio zonal, la fórmula arroja exactamente un veredicto de **`Anuncio sospechoso`** con un nivel de confianza en el entorno del **`82%`** y el motivo principal: *"Esta foto aparece en otro anuncio con un precio distinto"*, respetando literalmente la especificación del Entregable 3.
