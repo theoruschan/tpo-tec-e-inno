@@ -1,6 +1,7 @@
 import {
   FraudDirectoryEntry,
   KnownImageSignature,
+  PhotoSighting,
   ListingInput,
   RecommendationType,
   VerdictType,
@@ -19,6 +20,8 @@ export interface VerificationDependencies {
   fraudDirectory: FraudDirectoryEntry[];
   /** Hashes del CBU/alias y teléfono ingresados, para cruzar contra el directorio compartido. */
   inputIdentifierHashes?: InputIdentifierHashes;
+  /** Otras verificaciones con la misma foto (índice colaborativo de huellas). */
+  photoSightings?: PhotoSighting[];
 }
 
 export class VerifyListingUseCase {
@@ -38,7 +41,11 @@ export class VerifyListingUseCase {
     const qualityCheck = this.qualityValidator.validate(input);
 
     // Paso 1: Búsqueda inversa de imagen y anuncios duplicados
-    const imageAnalysis = this.imageMining.analyze(input, deps.knownImages);
+    const imageAnalysis = this.imageMining.analyze(
+      input,
+      deps.knownImages,
+      deps.photoSightings
+    );
 
     // Paso 2: Business Intelligence (BI) de precios por zona universitaria
     const priceAnalysis = this.zoneBi.analyze(input, zone);
@@ -100,7 +107,7 @@ export class VerifyListingUseCase {
 
       // Priorizar el mensaje exacto del prototipo si hay foto duplicada
       const duplicatePhotoFinding = allFindings.find(
-        (f) => f.id === 'img-duplicate-stolen'
+        (f) => f.id === 'img-duplicate-stolen' || f.id === 'img-duplicate-community'
       );
       primaryReason = duplicatePhotoFinding
         ? duplicatePhotoFinding.title

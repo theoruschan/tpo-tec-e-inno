@@ -394,7 +394,8 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
                 </strong>
               ) : (
                 <strong>
-                  Sin coincidencias en la base semilla ({KNOWN_IMAGE_SIGNATURES.length} fotos)
+                  Sin coincidencias en la base semilla ({KNOWN_IMAGE_SIGNATURES.length} fotos). Al
+                  verificar se compara también con fotos de anuncios que verificaron otros estudiantes.
                 </strong>
               )}
             </p>
@@ -407,8 +408,8 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
             </p>
           )}
           <p className="mt-1 text-[11px] text-slate-500">
-            Límite: se compara contra un dataset semilla de fotos ya reportadas, no
-            contra toda la web. Funciona mejor con la foto del aviso o un recorte; una
+            Límite: se compara contra fotos ya reportadas y contra las que subieron otros
+            estudiantes en CuartoSeguro, no contra toda la web. Funciona mejor con la foto del aviso o un recorte; una
             captura de pantalla completa (con texto y botones) puede no coincidir.
           </p>
         </div>
@@ -729,6 +730,11 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
             <strong>Confirmar autorización para procesar el anuncio:</strong> Autorizo a CuartoSeguro
             a analizar la información pública del enlace/captura y cruzarla contra el directorio
             colaborativo estudiantil (Solo información pública — Mapa de Oportunidad Tecnológica).
+            <span className="mt-1 block text-slate-600">
+              Si subiste una foto, se guarda solo su huella (no la imagen) con la zona, el precio y
+              el CBU/alias y teléfono convertidos en un código irreversible (hash), para avisarle a otros estudiantes si la misma foto
+              aparece en otro anuncio.
+            </span>
           </span>
         </label>
 

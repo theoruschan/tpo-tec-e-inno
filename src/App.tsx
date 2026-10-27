@@ -11,7 +11,10 @@ import {
   VerificationResult,
 } from './domain/entities/types';
 import { DataQualityValidator } from './domain/services/DataQualityValidator';
-import { createFraudDirectoryRepository } from './infrastructure/createFraudDirectoryRepository';
+import {
+  createFraudDirectoryRepository,
+  createPhotoSightingRepository,
+} from './infrastructure/createFraudDirectoryRepository';
 import {
   EMPTY_LISTING_INPUT,
   INITIAL_FRAUD_DIRECTORY,
@@ -65,6 +68,7 @@ const ScreenFallback: React.FC = () => (
 const verifierUseCase = new VerifyListingUseCase();
 const qualityValidator = new DataQualityValidator();
 const fraudRepository = createFraudDirectoryRepository(import.meta.env);
+const photoSightingRepository = createPhotoSightingRepository(import.meta.env);
 const benchmarkUseCase = new RunExperimentBenchmarkUseCase();
 const imageHasher = new BrowserImageHasher();
 const pdfExporter = new JsPdfReportExporter();
@@ -147,15 +151,26 @@ export const App: React.FC = () => {
   };
 
   const runVerificationAndSave = async (inputToVerify: ListingInput) => {
-    const inputIdentifierHashes = await fraudRepository.hashIdentifiers(
-      inputToVerify.cbuOrAlias,
-      inputToVerify.ownerPhone
-    );
+    const zone = UNIVERSITY_ZONES.find((z) => z.id === inputToVerify.zoneId);
+    const [inputIdentifierHashes, photoSightings] = await Promise.all([
+      fraudRepository.hashIdentifiers(inputToVerify.cbuOrAlias, inputToVerify.ownerPhone),
+      // Solo con foto subida y autorización: se registra la huella (no la imagen).
+      inputToVerify.uploadedImageDHash && inputToVerify.authorizedProcessing && zone
+        ? photoSightingRepository.matchAndRegister({
+            dHash: inputToVerify.uploadedImageDHash,
+            city: zone.city,
+            monthlyRentArs: inputToVerify.monthlyRentArs,
+            cbuOrAlias: inputToVerify.cbuOrAlias,
+            ownerPhone: inputToVerify.ownerPhone,
+          })
+        : Promise.resolve([]),
+    ]);
     const computed = verifierUseCase.execute(inputToVerify, {
       zones: UNIVERSITY_ZONES,
       knownImages: KNOWN_IMAGE_SIGNATURES,
       fraudDirectory,
       inputIdentifierHashes,
+      photoSightings,
     });
     setActiveResult(computed);
     const updatedHistory = [

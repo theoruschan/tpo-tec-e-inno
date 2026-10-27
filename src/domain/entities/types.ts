@@ -59,6 +59,21 @@ export interface KnownImageSignature {
   notes: string;
 }
 
+/**
+ * Otra verificación de CuartoSeguro (de otro dispositivo) que subió una foto con huella
+ * parecida. Sale del índice colaborativo de fotos; nunca trae datos del otro anuncio en claro.
+ */
+export interface PhotoSighting {
+  /** Distancia de Hamming entre las huellas (0 = la misma foto). */
+  distance: number;
+  city: string;
+  monthlyRentArs: number;
+  /** Fecha (día) en que se verificó el otro anuncio. */
+  seenAt: string;
+  /** true: mismo CBU/alias o teléfono · false: otro · null: no se puede saber. */
+  sameContact: boolean | null;
+}
+
 export interface FraudDirectoryEntry {
   id: string;
   cbuOrAlias: string;

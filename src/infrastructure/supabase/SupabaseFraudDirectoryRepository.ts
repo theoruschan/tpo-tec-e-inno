@@ -5,6 +5,7 @@ import {
   InputIdentifierHashes,
   SubmitReportResult,
 } from '../../domain/ports/FraudDirectoryRepository';
+import { callSupabaseRpc } from './supabaseRpc';
 
 interface PublicDirectoryRow {
   identifier_hash: string | null;
@@ -27,7 +28,6 @@ interface HashRow {
 /**
  * Adaptador del directorio compartido sobre Supabase (PostgREST RPC).
  * Usa solo la clave pública (anon); la sal del hash y la moderación viven en el servidor.
- * Se habla directo por fetch para no sumar supabase-js al bundle.
  */
 export class SupabaseFraudDirectoryRepository implements FraudDirectoryRepository {
   public readonly kind = 'shared' as const;
@@ -72,30 +72,8 @@ export class SupabaseFraudDirectoryRepository implements FraudDirectoryRepositor
     };
   }
 
-  private async rpc<T>(fn: string, body: Record<string, unknown>): Promise<T> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-    try {
-      const response = await this.fetchImpl(
-        `${this.projectUrl.replace(/\/$/, '')}/rest/v1/rpc/${fn}`,
-        {
-          method: 'POST',
-          headers: {
-            apikey: this.anonKey,
-            Authorization: `Bearer ${this.anonKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
-          signal: controller.signal,
-        }
-      );
-      if (!response.ok) {
-        throw new Error(`Supabase RPC ${fn} respondió ${response.status}`);
-      }
-      return (await response.json()) as T;
-    } finally {
-      clearTimeout(timer);
-    }
+  private rpc<T>(fn: string, body: Record<string, unknown>): Promise<T> {
+    return callSupabaseRpc<T>(this.projectUrl, this.anonKey, fn, body, this.fetchImpl, this.timeoutMs);
   }
 }
 

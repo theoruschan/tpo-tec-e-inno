@@ -30,7 +30,7 @@ El resultado es un veredicto (`Anuncio sospechoso` / `Verificado` / `Sin datos s
 | Motor de reglas, control de calidad, veredicto y confianza | **Real**, determinístico y testeado. Las reglas y umbrales son heurísticos, calibrados a mano. |
 | Lectura de la captura (OCR) | **Real**, en el navegador con tesseract.js (la captura no sale del dispositivo). Propone precio, seña, CBU/alias (valida los dígitos del CBU), teléfono, nombre, link y zona; el estudiante confirma. Probado con capturas sintéticas, todavía no con capturas reales de WhatsApp/Marketplace. |
 | Huella perceptual de la foto (dHash) | **Real**, se calcula en el navegador (la foto no sale del dispositivo). |
-| Base de fotos conocidas | **Semilla de 5 fotos.** No es una búsqueda en toda la web ni en los portales en vivo. Una captura de pantalla completa puede no coincidir; conviene subir la foto o un recorte. |
+| Base de fotos conocidas | **Semilla de 5 fotos + índice colaborativo en Supabase**: cada verificación con foto guarda su huella (no la imagen) y avisa si la misma foto aparece en otro anuncio verificado con otro precio o contacto. Arranca vacío, así que detecta más a medida que se usa. **No es una búsqueda en toda la web.** |
 | Precios promedio por zona | **Datos semilla** cargados a mano para el TP, no un relevamiento actualizado. |
 | Matrícula / registros públicos | **No se consulta ningún padrón real.** Solo se usa lo que declara el estudiante. |
 | Directorio de CBU/alias | **Real y compartido en Supabase**: CBU/alias/teléfono guardados como HMAC con sal secreta, enmascarados al mostrarse, reportes nuevos en moderación y regla de 3 reportes independientes. Los 5 casos semilla son **ficticios**. Si Supabase no responde, la app cae al modo local y lo indica. "Independiente" = otro navegador/dispositivo: no frena a alguien decidido a abusar. |
@@ -49,7 +49,7 @@ pnpm install
 pnpm dev          # servidor de desarrollo
 pnpm lint         # ESLint
 pnpm typecheck    # TypeScript estricto
-pnpm test         # Vitest (121 tests)
+pnpm test         # Vitest (131 tests)
 pnpm build        # build de producción en dist/
 pnpm preview      # sirve dist/ localmente
 ```

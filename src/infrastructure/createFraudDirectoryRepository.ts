@@ -7,7 +7,13 @@ import {
   SubmitReportResult,
 } from '../domain/ports/FraudDirectoryRepository';
 import { LocalFraudDirectoryRepository } from './storage/LocalFraudDirectoryRepository';
+import { PhotoSightingRepository } from '../domain/ports/PhotoSightingRepository';
 import { SupabaseFraudDirectoryRepository } from './supabase/SupabaseFraudDirectoryRepository';
+import {
+  NoPhotoSightingRepository,
+  ResilientPhotoSightingRepository,
+  SupabasePhotoSightingRepository,
+} from './supabase/SupabasePhotoSightingRepository';
 
 const REPORTER_ID_KEY = 'cuartoseguro_reporter_id_v1';
 
@@ -92,5 +98,17 @@ export function createFraudDirectoryRepository(env: {
   }
   return new ResilientFraudDirectoryRepository(
     new SupabaseFraudDirectoryRepository(url, anonKey, getOrCreateReporterId)
+  );
+}
+
+export function createPhotoSightingRepository(env: {
+  VITE_SUPABASE_URL?: string;
+  VITE_SUPABASE_ANON_KEY?: string;
+}): PhotoSightingRepository {
+  const url = env.VITE_SUPABASE_URL?.trim();
+  const anonKey = env.VITE_SUPABASE_ANON_KEY?.trim();
+  if (!url || !anonKey) return new NoPhotoSightingRepository();
+  return new ResilientPhotoSightingRepository(
+    new SupabasePhotoSightingRepository(url, anonKey, getOrCreateReporterId)
   );
 }

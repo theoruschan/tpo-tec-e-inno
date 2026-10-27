@@ -80,6 +80,19 @@ Las filas de prueba se borraron; la tabla quedó con los 25 reportes semilla.
 
 **Advertencias del linter de Supabase aceptadas:** `anon_security_definer_function_executable` y `authenticated_security_definer_function_executable` sobre las 3 RPC. Son intencionales: `SECURITY DEFINER` es lo que les permite usar la sal del schema `private` sin exponerla. Las tres tienen `search_path = ''` y validan sus entradas. No hay advertencias de RLS.
 
+## Índice colaborativo de fotos (búsqueda inversa propia)
+
+Migración: [`supabase/migrations/20261028000000_photo_sightings.sql`](../supabase/migrations/20261028000000_photo_sightings.sql). Aplicada el 27/10/2026.
+
+La base semilla tiene 5 fotos; por sí sola no detecta casi nada. Este índice hace que **cada verificación con foto alimente la detección de las siguientes**: si otro estudiante ya verificó un anuncio con la misma foto pero con **otro precio** (diferencia > 15 %) u **otro CBU/alias o teléfono**, el motor marca la alerta crítica *"Esta foto aparece en otro anuncio con un precio distinto"* (o *"…con otro CBU/alias o teléfono"*). Es el Hallazgo 3 del Entregable 3: los fraudes se detectan comparando anuncios entre sí.
+
+- **Qué se guarda** (`public.photo_sightings`), solo si se subió una foto y se marcó la autorización: dHash de 64 bits (no la imagen, no se puede reconstruir), ciudad, precio publicado, CBU/alias y teléfono como HMAC con la misma sal secreta del directorio, id anónimo del dispositivo hasheado y fecha.
+- **Qué devuelve** `match_and_register_photo` (única vía de acceso; la tabla no se puede leer ni escribir directo): hasta 5 coincidencias de **otros dispositivos** con distancia ≤ 10, cada una con distancia, ciudad, precio, día y si el contacto es el mismo (sí / no / no se sabe). Nunca devuelve hashes ni datos de contacto del otro anuncio.
+- **Anti-abuso:** el mismo dispositivo no duplica filas para el mismo anuncio y tiene un tope de 30 registros por hora. **Límite conocido:** alguien con varios dispositivos podría "envenenar" una foto legítima subiéndola con otro precio para que salte la alerta. Mitigación pendiente: login, rate limit por IP y moderación de alertas con pocas fuentes.
+- **Escala:** la búsqueda recorre la tabla completa (`bit_count` sobre XOR). Alcanza para miles de fotos; para cientos de miles habría que indexar por bandas (LSH).
+- **Verificado (27/10/2026):** con la clave pública, 6 escenarios de dispositivos simulados (misma foto con otro precio/contacto, mismo anuncio, foto casi igual a distancia 2, foto distinta, dHash inválido, lectura directa bloqueada) y el tope de 30/hora. En la app, dos dispositivos con la misma foto a $540.000 y $300.000 → el segundo sale "Anuncio sospechoso" con ese motivo. Filas de prueba borradas.
+- **Advertencia del linter aceptada:** `rls_enabled_no_policy` en `photo_sightings` es intencional (sin políticas = sin acceso directo).
+
 ## Configuración
 
 ```bash
