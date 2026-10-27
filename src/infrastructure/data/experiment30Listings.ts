@@ -1,7 +1,8 @@
 import { ExperimentSampleCase } from '../../domain/entities/types';
 
 /**
- * Dataset de los 30 Anuncios Reales de Ciudades Universitarias
+ * Dataset CURADO e ilustrativo de 30 anuncios de ciudades universitarias (ver docs/04:
+ * las reglas del motor se calibraron sobre estos casos; no es una validación independiente)
  * para el Experimento de Validación definido en el Punto 6 del
  * Mapa de Oportunidad Tecnológica (2_TECNOLOGIAS_G12_Fernandez-Lecuenis-Ruschannoff.pdf):
  *

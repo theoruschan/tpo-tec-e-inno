@@ -128,7 +128,7 @@ export const Screen1Home: React.FC<Screen1HomeProps> = ({
             className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3.5 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-200"
           >
             <FlaskConical className="h-4 w-4 text-indigo-600" />
-            Ver experimento de 30 anuncios reales
+            Ver experimento de 30 anuncios (dataset curado)
           </button>
         </div>
 

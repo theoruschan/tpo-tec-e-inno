@@ -1,0 +1,21 @@
+[
+  {
+    "case_id": 1,
+    "title": "Cuarto cerca de UADE",
+    "platform": "Facebook Marketplace",
+    "ground_truth": "FRAUD",
+    "what_happened": "Pidió seña por WhatsApp y bloqueó al estudiante",
+    "listing_url": "https://facebook.com/marketplace/item/ejemplo-1",
+    "zone_id": "caba-monserrat-uade",
+    "monthly_rent_ars": 230000,
+    "deposit_ars": 115000,
+    "owner_phone": "+54 9 11 0000-0001",
+    "cbu_or_alias": "alias.ejemplo.uno",
+    "account_age_months": 1,
+    "photo_count": 2,
+    "image_dhash": "1e9a9abab89983a3",
+    "requests_advance_before_visit": true,
+    "is_registered_real_estate": false,
+    "split": "evaluation"
+  }
+]

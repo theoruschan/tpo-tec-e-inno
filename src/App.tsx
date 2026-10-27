@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ParseExperimentDatasetUseCase } from './application/ParseExperimentDatasetUseCase';
 import { RunExperimentBenchmarkUseCase } from './application/RunExperimentBenchmarkUseCase';
 import { VerifyListingUseCase } from './application/VerifyListingUseCase';
 import { DirectorySourceKind } from './domain/ports/FraudDirectoryRepository';
 import {
+  ExperimentSampleCase,
   FraudDirectoryEntry,
   ListingInput,
   ScreenId,
@@ -49,6 +51,8 @@ const fraudRepository = createFraudDirectoryRepository(import.meta.env);
 const benchmarkUseCase = new RunExperimentBenchmarkUseCase();
 const imageHasher = new BrowserImageHasher();
 const pdfExporter = new JsPdfReportExporter();
+const datasetParser = new ParseExperimentDatasetUseCase(UNIVERSITY_ZONES.map((z) => z.id));
+const CURATED_DATASET_NAME = 'Dataset curado del TP (30 casos ilustrativos)';
 
 export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] =
@@ -92,17 +96,34 @@ export const App: React.FC = () => {
     [draftInput]
   );
 
+  const [customDataset, setCustomDataset] = useState<{
+    name: string;
+    samples: ExperimentSampleCase[];
+  } | null>(null);
+  const [datasetErrors, setDatasetErrors] = useState<string[]>([]);
+
   // El experimento corre siempre contra el directorio semilla fijo para que sea reproducible
   // (no cambia porque alguien reporte algo nuevo en el directorio compartido).
   const benchmarkSummary = useMemo(
     () =>
-      benchmarkUseCase.execute(EXPERIMENT_30_REAL_LISTINGS, {
-        zones: UNIVERSITY_ZONES,
-        knownImages: KNOWN_IMAGE_SIGNATURES,
-        fraudDirectory: INITIAL_FRAUD_DIRECTORY,
-      }),
-    []
+      benchmarkUseCase.executeWithSplit(
+        customDataset?.samples ?? EXPERIMENT_30_REAL_LISTINGS,
+        {
+          zones: UNIVERSITY_ZONES,
+          knownImages: KNOWN_IMAGE_SIGNATURES,
+          fraudDirectory: INITIAL_FRAUD_DIRECTORY,
+        }
+      ),
+    [customDataset]
   );
+
+  const handleLoadDataset = async (file: File) => {
+    const parsed = datasetParser.execute(await file.text(), file.name);
+    setDatasetErrors(parsed.errors);
+    if (parsed.samples.length > 0) {
+      setCustomDataset({ name: file.name, samples: parsed.samples });
+    }
+  };
 
   const runVerificationAndSave = async (inputToVerify: ListingInput) => {
     const inputIdentifierHashes = await fraudRepository.hashIdentifiers(
@@ -262,6 +283,14 @@ export const App: React.FC = () => {
         {currentScreen === 'view-experiment' && (
           <ExperimentBenchmarkView
             benchmark={benchmarkSummary}
+            datasetName={customDataset?.name ?? CURATED_DATASET_NAME}
+            isCustomDataset={customDataset !== null}
+            datasetErrors={datasetErrors}
+            onLoadDataset={(file) => void handleLoadDataset(file)}
+            onResetDataset={() => {
+              setCustomDataset(null);
+              setDatasetErrors([]);
+            }}
             onInspectCase={(caseResult) => {
               setActiveResult(caseResult);
               setCurrentScreen('screen-6-result');

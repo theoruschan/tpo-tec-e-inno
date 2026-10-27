@@ -150,13 +150,18 @@ export interface VerificationResult {
 
 export type GroundTruthLabel = 'FRAUD' | 'LEGITIMATE' | 'INSUFFICIENT_DATA';
 
+export type ExperimentSplit = 'calibration' | 'evaluation';
+
 export interface ExperimentSampleCase {
   caseNumber: number;
   title: string;
-  platform: 'Facebook Marketplace' | 'Zonaprop' | 'Argenprop' | 'Grupo Facultad WhatsApp' | 'Instagram / Clasificados';
+  /** Texto libre: los datasets cargados por el usuario pueden traer cualquier plataforma. */
+  platform: string;
   groundTruth: GroundTruthLabel;
   whatActuallyHappened: string;
   input: ListingInput;
+  /** Si viene definido en el dataset, se respeta; si no, se asigna de forma determinística. */
+  split?: ExperimentSplit;
 }
 
 export interface ExperimentCaseEvaluation {
@@ -169,6 +174,8 @@ export interface ExperimentCaseEvaluation {
 export interface ExperimentBenchmarkSummary {
   totalCases: number;
   totalActualFrauds: number;
+  totalActualLegitimate: number;
+  totalActualInsufficientData: number;
   detectedFraudsTruePositives: number;
   missedFraudsFalseNegatives: number;
   falseAlarmsFalsePositives: number;

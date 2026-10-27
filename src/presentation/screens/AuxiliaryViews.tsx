@@ -9,7 +9,10 @@ import {
   FlaskConical,
   History,
   CheckCircle2,
+  Upload,
+  XCircle,
 } from 'lucide-react';
+import { SplitBenchmarkSummary } from '../../application/RunExperimentBenchmarkUseCase';
 import {
   ExperimentBenchmarkSummary,
   FraudDirectoryEntry,
@@ -239,16 +242,78 @@ export const DirectoryView: React.FC<DirectoryViewProps> = ({
 };
 
 interface ExperimentBenchmarkViewProps {
-  benchmark: ExperimentBenchmarkSummary;
+  benchmark: SplitBenchmarkSummary;
+  datasetName: string;
+  isCustomDataset: boolean;
+  datasetErrors: string[];
+  onLoadDataset: (file: File) => void;
+  onResetDataset: () => void;
   onInspectCase: (result: VerificationResult) => void;
 }
 
-export const ExperimentBenchmarkView: React.FC<
-  ExperimentBenchmarkViewProps
-> = ({ benchmark, onInspectCase }) => {
-  const [filterTruth, setFilterTruth] = useState<string>('ALL');
+const MetricsRow: React.FC<{ title: string; summary: ExperimentBenchmarkSummary; tone: string }> = ({
+  title,
+  summary,
+  tone,
+}) => (
+  <div className={`rounded-2xl border p-4 ${tone}`}>
+    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+      {title} · {summary.totalCases} {summary.totalCases === 1 ? 'caso' : 'casos'} ({summary.totalActualFrauds} estafas,{' '}
+      {summary.totalActualLegitimate} legítimos, {summary.totalActualInsufficientData} sin datos)
+    </h3>
+    <dl className="mt-2 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+      <div>
+        <dt className="text-slate-600">Recall de estafas</dt>
+        <dd className="text-2xl font-black text-slate-900">
+          {summary.totalActualFrauds > 0 ? `${summary.fraudDetectionRecallPercent}%` : '—'}
+        </dd>
+        <dd className="text-[11px] text-slate-600">
+          {summary.detectedFraudsTruePositives}/{summary.totalActualFrauds} detectadas
+        </dd>
+      </div>
+      <div>
+        <dt className="text-slate-600">Precisión</dt>
+        <dd className="text-2xl font-black text-slate-900">
+          {summary.detectedFraudsTruePositives + summary.falseAlarmsFalsePositives > 0
+            ? `${summary.precisionPercent}%`
+            : '—'}
+        </dd>
+        <dd className="text-[11px] text-slate-600">
+          {summary.falseAlarmsFalsePositives} falsa{summary.falseAlarmsFalsePositives === 1 ? '' : 's'} alarma
+          {summary.falseAlarmsFalsePositives === 1 ? '' : 's'}
+        </dd>
+      </div>
+      <div>
+        <dt className="text-slate-600">Accuracy (3 clases)</dt>
+        <dd className="text-2xl font-black text-slate-900">{summary.overallAccuracyPercent}%</dd>
+      </div>
+      <div>
+        <dt className="text-slate-600">Legítimos / sin datos bien clasificados</dt>
+        <dd className="text-2xl font-black text-slate-900">
+          {summary.verifiedLegitimateTrueNegatives}/{summary.totalActualLegitimate} ·{' '}
+          {summary.insufficientDataDetected}/{summary.totalActualInsufficientData}
+        </dd>
+      </div>
+    </dl>
+  </div>
+);
 
-  const filteredEvaluations = benchmark.evaluations.filter((ev) => {
+export const ExperimentBenchmarkView: React.FC<ExperimentBenchmarkViewProps> = ({
+  benchmark,
+  datasetName,
+  isCustomDataset,
+  datasetErrors,
+  onLoadDataset,
+  onResetDataset,
+  onInspectCase,
+}) => {
+  const [filterTruth, setFilterTruth] = useState<string>('ALL');
+  const full = benchmark.full;
+  const splitByCase = new Map<number, string>();
+  for (const ev of benchmark.calibration.evaluations) splitByCase.set(ev.sample.caseNumber, 'Calibración');
+  for (const ev of benchmark.evaluation.evaluations) splitByCase.set(ev.sample.caseNumber, 'Evaluación');
+
+  const filteredEvaluations = full.evaluations.filter((ev) => {
     if (filterTruth === 'ALL') return true;
     return ev.sample.groundTruth === filterTruth;
   });
@@ -257,12 +322,12 @@ export const ExperimentBenchmarkView: React.FC<
     <div className="space-y-6">
       {/* Encabezado del Experimento del Mapa de Oportunidad Tecnológica */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
-        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-700">
           <FlaskConical className="h-4 w-4" />
           Entregable 2 · Mapa de Oportunidad Tecnológica (Punto 6: Experimento y Métrica)
         </span>
         <h1 className="mt-1 text-2xl font-extrabold text-slate-900 sm:text-3xl">
-          Experimento de Validación con 30 Anuncios Reales
+          Experimento de validación con {full.totalCases} anuncios
         </h1>
         <p className="mt-1 text-xs leading-relaxed text-slate-600">
           <em>
@@ -271,79 +336,121 @@ export const ExperimentBenchmarkView: React.FC<
             anuncios truchos detectados correctamente."
           </em>{' '}
           Cada fila ejecuta el motor real de CuartoSeguro (`VerifyListingUseCase`) y
-          contrasta su veredicto contra el resultado empírico.
+          contrasta su veredicto contra el resultado informado en el dataset.
         </p>
 
-        {/* KPIs del Experimento */}
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
-            <span className="text-[11px] font-bold uppercase text-emerald-800">
-              Métrica Clave (% Truchos Detectados)
-            </span>
-            <p className="mt-1 text-3xl font-black text-emerald-900">
-              {benchmark.fraudDetectionRecallPercent}%
+        {/* Aviso de honestidad metodológica */}
+        <div
+          role="note"
+          className="mt-4 flex gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-950"
+        >
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-700" aria-hidden="true" />
+          {isCustomDataset ? (
+            <p>
+              <strong>Dataset cargado por vos ({datasetName}).</strong> Si estos anuncios no se usaron
+              para ajustar las reglas, la fila <strong>Evaluación</strong> es una medición
+              independiente. Con pocos casos, cada error mueve mucho el porcentaje: informá
+              siempre el conteo (ej. 9/10) además del %.
             </p>
-            <p className="mt-0.5 text-xs text-emerald-800">
-              {benchmark.detectedFraudsTruePositives} de{' '}
-              {benchmark.totalActualFrauds} estafas reales detectadas a tiempo
+          ) : (
+            <p>
+              <strong>Estos 30 casos son un dataset curado e ilustrativo</strong>, armado por el
+              equipo para mostrar los patrones del TP. Las reglas y umbrales del motor se
+              calibraron mirando estos mismos casos, así que el <strong>100% de recall no es una
+              validación independiente</strong>: mide si el motor reproduce lo que ya sabíamos.
+              Incluso la parte de "evaluación" vio las reglas ajustadas sobre todo el set. Para
+              medir de verdad, cargá tus propios anuncios reales con su resultado (formato en
+              docs/04).
             </p>
-          </div>
+          )}
+        </div>
 
-          <div className="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4">
-            <span className="text-[11px] font-bold uppercase text-indigo-800">
-              Exactitud Global (30 casos)
-            </span>
-            <p className="mt-1 text-3xl font-black text-indigo-900">
-              {benchmark.overallAccuracyPercent}%
+        {/* Carga de dataset propio */}
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
+          <label
+            htmlFor="dataset-upload"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2 font-bold text-indigo-800 hover:bg-indigo-100 focus-within:ring-2 focus-within:ring-indigo-600"
+          >
+            <Upload className="h-4 w-4" aria-hidden="true" />
+            Cargar mi dataset (CSV o JSON)
+            <input
+              id="dataset-upload"
+              type="file"
+              accept=".csv,.json,text/csv,application/json"
+              className="sr-only"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onLoadDataset(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          {isCustomDataset && (
+            <button
+              type="button"
+              onClick={onResetDataset}
+              className="rounded-xl px-3 py-2 font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              Volver al dataset curado
+            </button>
+          )}
+          <span className="text-slate-600">
+            Dataset activo: <strong>{datasetName}</strong> ({full.totalCases} casos)
+          </span>
+        </div>
+        {datasetErrors.length > 0 && (
+          <div role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-900">
+            <p className="font-bold">
+              {datasetErrors.length} fila{datasetErrors.length === 1 ? '' : 's'} con problemas
+              {isCustomDataset ? ' (se omitieron; el resto se evaluó):' : ' (no se cargó el dataset):'}
             </p>
-            <p className="mt-0.5 text-xs text-indigo-800">
-              Clasificación ternaria exacta en los {benchmark.totalCases} anuncios
-            </p>
+            <ul className="mt-1 list-disc pl-5">
+              {datasetErrors.slice(0, 8).map((err) => (
+                <li key={err}>{err}</li>
+              ))}
+              {datasetErrors.length > 8 && <li>… y {datasetErrors.length - 8} más.</li>}
+            </ul>
           </div>
+        )}
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <span className="text-[11px] font-bold uppercase text-slate-600">
-              Alquileres Legítimos Validados
-            </span>
-            <p className="mt-1 text-3xl font-black text-slate-900">
-              {benchmark.verifiedLegitimateTrueNegatives} / 13
-            </p>
-            <p className="mt-0.5 text-xs text-slate-600">
-              0 falsas alarmas sobre inmobiliarias y residencias reales
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-            <span className="text-[11px] font-bold uppercase text-amber-800">
-              Frenos por Faltante de Datos
-            </span>
-            <p className="mt-1 text-3xl font-black text-amber-900">
-              {benchmark.insufficientDataDetected} / 3
-            </p>
-            <p className="mt-0.5 text-xs text-amber-800">
-              Bloqueados preventivamente por Control de Calidad (Pantalla 4)
-            </p>
-          </div>
+        {/* Métricas separadas por calibración y evaluación */}
+        <div className="mt-6 space-y-3">
+          <p className="text-xs text-slate-600">
+            {benchmark.splitSource === 'explicit'
+              ? 'La separación calibración/evaluación viene de la columna "split" del dataset.'
+              : 'Separación automática: 1 de cada 3 casos de cada etiqueta (por número de caso) va a evaluación.'}
+          </p>
+          <MetricsRow
+            title="Calibración"
+            summary={benchmark.calibration}
+            tone="border-slate-200 bg-slate-50"
+          />
+          <MetricsRow
+            title="Evaluación"
+            summary={benchmark.evaluation}
+            tone="border-indigo-200 bg-indigo-50/60"
+          />
+          <MetricsRow title="Total" summary={full} tone="border-slate-200 bg-white" />
         </div>
 
         {/* Mitigación del Riesgo Principal: Calidad dispar de registros públicos por ciudad */}
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Evaluación del Riesgo Principal: Desempeño según Calidad de Registros Públicos por Ciudad
+            Riesgo principal: desempeño según calidad de registros públicos por ciudad (total)
           </h2>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
-            {benchmark.byCityBreakdown.map((cityStat) => (
+            {full.byCityBreakdown.map((cityStat) => (
               <div
                 key={cityStat.city}
                 className="rounded-xl border border-slate-200 bg-white p-3 text-xs"
               >
                 <div className="flex items-center justify-between font-bold text-slate-900">
                   <span>{cityStat.city}</span>
-                  <span className="text-emerald-700">
+                  <span className="text-emerald-800">
                     {cityStat.accuracyPercent}% acierto
                   </span>
                 </div>
-                <p className="mt-1 text-[11px] text-slate-500">
+                <p className="mt-1 text-[11px] text-slate-600">
                   Calidad registros públicos:{' '}
                   <strong>{cityStat.publicRegistryQuality}</strong> ({cityStat.correct}/
                   {cityStat.total} casos)
@@ -354,22 +461,23 @@ export const ExperimentBenchmarkView: React.FC<
         </div>
       </div>
 
-      {/* Tabla interactiva de los 30 Anuncios Reales */}
+      {/* Tabla interactiva de casos */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-bold text-slate-900">
-            Detalle de los 30 anuncios verificados contra la realidad
+            Detalle de los {full.totalCases} anuncios contra lo que realmente pasó
           </h2>
           <div className="flex flex-wrap gap-1.5 text-xs">
             {[
-              { id: 'ALL', label: 'Todos (30)' },
-              { id: 'FRAUD', label: 'Estafas Reales (14)' },
-              { id: 'LEGITIMATE', label: 'Legítimos (13)' },
-              { id: 'INSUFFICIENT_DATA', label: 'Sin Datos (3)' },
+              { id: 'ALL', label: `Todos (${full.totalCases})` },
+              { id: 'FRAUD', label: `Estafas (${full.totalActualFrauds})` },
+              { id: 'LEGITIMATE', label: `Legítimos (${full.totalActualLegitimate})` },
+              { id: 'INSUFFICIENT_DATA', label: `Sin datos (${full.totalActualInsufficientData})` },
             ].map((tab) => (
               <button
                 key={tab.id}
                 type="button"
+                aria-pressed={filterTruth === tab.id}
                 onClick={() => setFilterTruth(tab.id)}
                 className={`rounded-lg px-3 py-1.5 font-semibold ${
                   filterTruth === tab.id
@@ -386,12 +494,12 @@ export const ExperimentBenchmarkView: React.FC<
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500 uppercase">
-                <th className="py-3 pr-3">#</th>
-                <th className="py-3 px-3">Anuncio / Ciudad / Precio</th>
-                <th className="py-3 px-3">Lo que realmente pasó</th>
-                <th className="py-3 px-3">Veredicto CuartoSeguro</th>
-                <th className="py-3 pl-3 text-right">Acción</th>
+              <tr className="border-b border-slate-200 text-slate-600 uppercase">
+                <th scope="col" className="py-3 pr-3">#</th>
+                <th scope="col" className="py-3 px-3">Anuncio / Ciudad / Precio</th>
+                <th scope="col" className="py-3 px-3">Lo que realmente pasó</th>
+                <th scope="col" className="py-3 px-3">Veredicto CuartoSeguro</th>
+                <th scope="col" className="py-3 pl-3 text-right">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -399,14 +507,17 @@ export const ExperimentBenchmarkView: React.FC<
                 const { sample, result, isCorrectlyClassified } = ev;
                 return (
                   <tr key={sample.caseNumber} className="hover:bg-slate-50/80">
-                    <td className="py-3.5 pr-3 font-bold text-slate-500">
+                    <td className="py-3.5 pr-3 font-bold text-slate-600">
                       #{sample.caseNumber}
+                      <span className="mt-1 block text-[10px] font-semibold uppercase text-slate-500">
+                        {splitByCase.get(sample.caseNumber)}
+                      </span>
                     </td>
                     <td className="py-3.5 px-3">
                       <div className="font-bold text-slate-900">
                         {sample.title}
                       </div>
-                      <div className="mt-0.5 text-[11px] text-slate-500">
+                      <div className="mt-0.5 text-[11px] text-slate-600">
                         {sample.platform} ·{' '}
                         {result.priceComparison.zone.city} ($
                         {sample.input.monthlyRentArs.toLocaleString('es-AR')}
@@ -424,15 +535,20 @@ export const ExperimentBenchmarkView: React.FC<
                             ? 'bg-red-100 text-red-800'
                             : result.verdict === 'Verificado'
                               ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-amber-100 text-amber-800'
+                              : 'bg-amber-100 text-amber-900'
                         }`}
                       >
                         {result.verdict} ({result.confidenceLevel}%)
                       </span>
-                      {isCorrectlyClassified && (
-                        <div className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 ml-2">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
+                      {isCorrectlyClassified ? (
+                        <div className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 ml-2">
+                          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                           Coincide
+                        </div>
+                      ) : (
+                        <div className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-red-800 ml-2">
+                          <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                          No coincide (esperado: {ev.expectedVerdict})
                         </div>
                       )}
                     </td>
@@ -443,7 +559,7 @@ export const ExperimentBenchmarkView: React.FC<
                         className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 font-bold text-indigo-700 hover:bg-indigo-100"
                       >
                         Ver Pantalla 6
-                        <ArrowRight className="h-3.5 w-3.5" />
+                        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     </td>
                   </tr>

@@ -2,6 +2,7 @@ import {
   ExperimentBenchmarkSummary,
   ExperimentCaseEvaluation,
   ExperimentSampleCase,
+  ExperimentSplit,
   VerdictType,
 } from '../domain/entities/types';
 import {
@@ -16,8 +17,63 @@ import {
  * comparar contra lo que realmente pasó. Métrica: % de anuncios truchos
  * detectados correctamente."
  */
+export interface SplitBenchmarkSummary {
+  full: ExperimentBenchmarkSummary;
+  calibration: ExperimentBenchmarkSummary;
+  evaluation: ExperimentBenchmarkSummary;
+  /** 'explicit' = el dataset traía la columna split; 'auto' = 1 de cada 3 casos va a evaluación. */
+  splitSource: 'explicit' | 'auto';
+}
+
+/**
+ * Separa calibración y evaluación. Si el dataset no trae `split`, se manda a evaluación
+ * 1 de cada 3 casos (por orden de caseNumber) dentro de cada etiqueta real, así ambas
+ * mitades tienen estafas, legítimos y casos sin datos (30 casos → 20/10 aprox.).
+ */
+export function assignExperimentSplit(
+  samples: ExperimentSampleCase[]
+): { samples: (ExperimentSampleCase & { split: ExperimentSplit })[]; splitSource: 'explicit' | 'auto' } {
+  if (samples.length > 0 && samples.every((s) => s.split)) {
+    return {
+      samples: samples as (ExperimentSampleCase & { split: ExperimentSplit })[],
+      splitSource: 'explicit',
+    };
+  }
+  const positionInLabel = new Map<string, number>();
+  const sorted = [...samples].sort((a, b) => a.caseNumber - b.caseNumber);
+  const splitByCase = new Map<number, ExperimentSplit>();
+  for (const sample of sorted) {
+    const index = positionInLabel.get(sample.groundTruth) ?? 0;
+    positionInLabel.set(sample.groundTruth, index + 1);
+    splitByCase.set(sample.caseNumber, index % 3 === 2 ? 'evaluation' : 'calibration');
+  }
+  return {
+    samples: samples.map((s) => ({ ...s, split: splitByCase.get(s.caseNumber)! })),
+    splitSource: 'auto',
+  };
+}
+
 export class RunExperimentBenchmarkUseCase {
   private readonly verifier = new VerifyListingUseCase();
+
+  public executeWithSplit(
+    samples: ExperimentSampleCase[],
+    deps: VerificationDependencies
+  ): SplitBenchmarkSummary {
+    const { samples: withSplit, splitSource } = assignExperimentSplit(samples);
+    return {
+      full: this.execute(withSplit, deps),
+      calibration: this.execute(
+        withSplit.filter((s) => s.split === 'calibration'),
+        deps
+      ),
+      evaluation: this.execute(
+        withSplit.filter((s) => s.split === 'evaluation'),
+        deps
+      ),
+      splitSource,
+    };
+  }
 
   public execute(
     samples: ExperimentSampleCase[],
@@ -48,6 +104,12 @@ export class RunExperimentBenchmarkUseCase {
       (e) => e.sample.groundTruth === 'FRAUD'
     );
     const totalActualFrauds = actualFrauds.length;
+    const totalActualLegitimate = evaluations.filter(
+      (e) => e.sample.groundTruth === 'LEGITIMATE'
+    ).length;
+    const totalActualInsufficientData = evaluations.filter(
+      (e) => e.sample.groundTruth === 'INSUFFICIENT_DATA'
+    ).length;
 
     const detectedFraudsTruePositives = actualFrauds.filter(
       (e) => e.result.verdict === 'Anuncio sospechoso'
@@ -137,6 +199,8 @@ export class RunExperimentBenchmarkUseCase {
     return {
       totalCases,
       totalActualFrauds,
+      totalActualLegitimate,
+      totalActualInsufficientData,
       detectedFraudsTruePositives,
       missedFraudsFalseNegatives,
       falseAlarmsFalsePositives,
