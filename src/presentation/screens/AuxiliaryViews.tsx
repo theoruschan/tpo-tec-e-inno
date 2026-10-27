@@ -90,7 +90,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                     )}
                     {item.verdict} ({item.confidenceLevel}% confianza)
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-600">
                     {formatDateTime(item.createdAt)}
                   </span>
                 </div>
@@ -257,10 +257,10 @@ const MetricsRow: React.FC<{ title: string; summary: ExperimentBenchmarkSummary;
   tone,
 }) => (
   <div className={`rounded-2xl border p-4 ${tone}`}>
-    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
       {title} · {summary.totalCases} {summary.totalCases === 1 ? 'caso' : 'casos'} ({summary.totalActualFrauds} estafas,{' '}
       {summary.totalActualLegitimate} legítimos, {summary.totalActualInsufficientData} sin datos)
-    </h3>
+    </h2>
     <dl className="mt-2 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
       <div>
         <dt className="text-slate-600">Recall de estafas</dt>

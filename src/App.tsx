@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { ParseExperimentDatasetUseCase } from './application/ParseExperimentDatasetUseCase';
 import { RunExperimentBenchmarkUseCase } from './application/RunExperimentBenchmarkUseCase';
 import { VerifyListingUseCase } from './application/VerifyListingUseCase';
@@ -24,26 +24,41 @@ import { JsPdfReportExporter } from './infrastructure/report/JsPdfReportExporter
 import { LocalRepository } from './infrastructure/storage/LocalRepository';
 import { Navbar } from './presentation/components/Navbar';
 import {
-  DirectoryView,
-  ExperimentBenchmarkView,
-  HistoryView,
-} from './presentation/screens/AuxiliaryViews';
-import {
   Screen1Home,
   Screen2Instructions,
 } from './presentation/screens/Screen1HomeAnd2Instructions';
-import {
-  Screen3Input,
-  Screen4Quality,
-} from './presentation/screens/Screen3InputAnd4Quality';
-import {
-  Screen5Processing,
-  Screen6Result,
-} from './presentation/screens/Screen5ProcessingAnd6Result';
-import {
-  Screen7Details,
-  Screen8Report,
-} from './presentation/screens/Screen7DetailsAnd8Report';
+
+// Pantallas 1-2 van en el bundle inicial; el resto se descarga al navegar (un chunk por archivo).
+const loadAuxiliary = () => import('./presentation/screens/AuxiliaryViews');
+const loadInputAndQuality = () => import('./presentation/screens/Screen3InputAnd4Quality');
+const loadProcessingAndResult = () => import('./presentation/screens/Screen5ProcessingAnd6Result');
+const loadDetailsAndReport = () => import('./presentation/screens/Screen7DetailsAnd8Report');
+
+const HistoryView = lazy(() => loadAuxiliary().then((m) => ({ default: m.HistoryView })));
+const DirectoryView = lazy(() => loadAuxiliary().then((m) => ({ default: m.DirectoryView })));
+const ExperimentBenchmarkView = lazy(() =>
+  loadAuxiliary().then((m) => ({ default: m.ExperimentBenchmarkView }))
+);
+const Screen3Input = lazy(() => loadInputAndQuality().then((m) => ({ default: m.Screen3Input })));
+const Screen4Quality = lazy(() => loadInputAndQuality().then((m) => ({ default: m.Screen4Quality })));
+const Screen5Processing = lazy(() =>
+  loadProcessingAndResult().then((m) => ({ default: m.Screen5Processing }))
+);
+const Screen6Result = lazy(() =>
+  loadProcessingAndResult().then((m) => ({ default: m.Screen6Result }))
+);
+const Screen7Details = lazy(() =>
+  loadDetailsAndReport().then((m) => ({ default: m.Screen7Details }))
+);
+const Screen8Report = lazy(() =>
+  loadDetailsAndReport().then((m) => ({ default: m.Screen8Report }))
+);
+
+const ScreenFallback: React.FC = () => (
+  <p role="status" className="py-16 text-center text-sm text-slate-600">
+    Cargando…
+  </p>
+);
 
 const verifierUseCase = new VerifyListingUseCase();
 const qualityValidator = new DataQualityValidator();
@@ -104,8 +119,11 @@ export const App: React.FC = () => {
 
   // El experimento corre siempre contra el directorio semilla fijo para que sea reproducible
   // (no cambia porque alguien reporte algo nuevo en el directorio compartido).
+  // Se calcula solo al abrir el laboratorio: no frena la carga inicial.
+  const isLabOpen = currentScreen === 'view-experiment';
   const benchmarkSummary = useMemo(
     () =>
+      isLabOpen &&
       benchmarkUseCase.executeWithSplit(
         customDataset?.samples ?? EXPERIMENT_30_REAL_LISTINGS,
         {
@@ -114,7 +132,7 @@ export const App: React.FC = () => {
           fraudDirectory: INITIAL_FRAUD_DIRECTORY,
         }
       ),
-    [customDataset]
+    [customDataset, isLabOpen]
   );
 
   const handleLoadDataset = async (file: File) => {
@@ -186,6 +204,7 @@ export const App: React.FC = () => {
       />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+        <Suspense fallback={<ScreenFallback />}>
         {currentScreen === 'screen-1-home' && (
           <Screen1Home
             onNavigate={setCurrentScreen}
@@ -280,7 +299,7 @@ export const App: React.FC = () => {
           <DirectoryView directory={fraudDirectory} sourceKind={directoryKind} />
         )}
 
-        {currentScreen === 'view-experiment' && (
+        {currentScreen === 'view-experiment' && benchmarkSummary && (
           <ExperimentBenchmarkView
             benchmark={benchmarkSummary}
             datasetName={customDataset?.name ?? CURATED_DATASET_NAME}
@@ -297,6 +316,7 @@ export const App: React.FC = () => {
             }}
           />
         )}
+        </Suspense>
       </main>
 
       <footer className="no-print border-t border-slate-200 bg-white py-5 text-xs text-slate-500">

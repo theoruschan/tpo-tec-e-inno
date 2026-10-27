@@ -24,6 +24,8 @@ export const SupportDialog: React.FC<SupportDialogProps> = ({
     if (isOpen && !dialog.open) {
       setSubmitted(false);
       dialog.showModal();
+      // autoFocus de React no aplica dentro de showModal(): llevamos el foco al primer campo.
+      dialog.querySelector<HTMLInputElement>('#support-contact')?.focus();
     } else if (!isOpen && dialog.open) {
       dialog.close();
     }
@@ -54,6 +56,8 @@ export const SupportDialog: React.FC<SupportDialogProps> = ({
       ref={dialogRef}
       onClose={onClose}
       onPointerUp={handlePointerUp}
+      aria-labelledby="support-dialog-title"
+      aria-describedby="support-dialog-desc"
       className="m-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl"
     >
       <div className="p-6">
@@ -63,11 +67,11 @@ export const SupportDialog: React.FC<SupportDialogProps> = ({
               <LifeBuoy className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900">
+              <h2 id="support-dialog-title" className="text-lg font-bold text-slate-900">
                 Contactar soporte humano ante dudas
               </h2>
-              <p className="text-xs text-slate-500">
-                Mesa de ayuda estudiantil · Respuesta rápida por WhatsApp
+              <p id="support-dialog-desc" className="text-xs text-slate-600">
+                Prototipo: todavía no hay una mesa de ayuda conectada.
               </p>
             </div>
           </div>
@@ -75,23 +79,28 @@ export const SupportDialog: React.FC<SupportDialogProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Cerrar ventana de soporte"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {submitted ? (
-          <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+          <div
+            role="status"
+            className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"
+          >
             <div className="flex items-center gap-2 font-bold">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              Consulta prioritaria enviada
+              <CheckCircle2 className="h-5 w-5 text-amber-700" aria-hidden="true" />
+              Consulta registrada solo en esta demo
             </div>
             <p className="mt-1 text-xs leading-relaxed">
-              Un voluntario del equipo de Bienestar Estudiantil / Centro de Estudiantes revisará el anuncio{' '}
-              <span className="font-semibold">{listingReference}</span> y te escribirá a{' '}
-              <span className="font-semibold">{studentContact}</span> en los próximos minutos.
-              Mientras tanto, <strong>no transfieras ninguna seña</strong>.
+              Este prototipo todavía <strong>no envía</strong> la consulta a ninguna persona y
+              nadie va a escribirte a <span className="font-semibold">{studentContact}</span>.
+              Si tenés dudas sobre el anuncio{' '}
+              <span className="font-semibold">{listingReference}</span>, consultá con el centro
+              de estudiantes o bienestar estudiantil de tu facultad y, mientras tanto,{' '}
+              <strong>no transfieras ninguna seña</strong>.
             </p>
             <button
               type="button"
@@ -170,7 +179,7 @@ export const SupportDialog: React.FC<SupportDialogProps> = ({
                 type="submit"
                 className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
               >
-                Enviar consulta urgente
+                Enviar consulta (demo)
               </button>
             </div>
           </form>

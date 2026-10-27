@@ -90,9 +90,9 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
                 <span className="inline-block rounded-md bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white">
                   Coincidencia de Búsqueda Inversa de Imagen
                 </span>
-                <h3 className="text-sm font-bold text-red-950">
+                <h2 className="text-sm font-bold text-red-950">
                   {result.matchedDuplicateImage.title}
-                </h3>
+                </h2>
                 <p className="text-red-900">
                   <strong>Fuente original detectada:</strong>{' '}
                   {result.matchedDuplicateImage.originalSource} (

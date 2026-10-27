@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   CheckCircle2,
   Loader2,
@@ -40,24 +40,30 @@ export const Screen5Processing: React.FC<Screen5ProcessingProps> = ({
   onComplete,
 }) => {
   const [activeStep, setActiveStep] = useState(1);
+  // App pasa una función nueva en cada render; con una ref los timers no se reinician.
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     const t1 = window.setTimeout(() => setActiveStep(2), 650);
     const t2 = window.setTimeout(() => setActiveStep(3), 1300);
-    const t3 = window.setTimeout(() => onComplete(), 1950);
+    const t3 = window.setTimeout(() => onCompleteRef.current(), 1950);
 
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
       window.clearTimeout(t3);
     };
-  }, [onComplete]);
+  }, []);
+
+  const currentStep = PROCESSING_STEPS.find((item) => item.step === activeStep);
 
   return (
-    <div
-      aria-live="polite"
-      className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
-    >
+    <div className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      {/* Solo se anuncia el paso actual, no toda la tarjeta en cada cambio */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {currentStep ? currentStep.title : ''}
+      </p>
       <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
         Pantalla 5 de 8 · Procesamiento en curso
       </div>
@@ -70,26 +76,27 @@ export const Screen5Processing: React.FC<Screen5ProcessingProps> = ({
         de dejar la espera en silencio:
       </p>
 
-      <div className="mt-6 space-y-3">
+      <ol className="mt-6 space-y-3">
         {PROCESSING_STEPS.map((item) => {
           const isDone = activeStep > item.step;
           const isCurrent = activeStep === item.step;
           return (
-            <div
+            <li
               key={item.step}
-              className={`rounded-2xl border p-4 transition-all ${
+              aria-current={isCurrent ? 'step' : undefined}
+              className={`rounded-2xl border p-4 motion-safe:transition-all ${
                 isCurrent
                   ? 'border-indigo-300 bg-indigo-50/70 shadow-xs'
                   : isDone
                     ? 'border-emerald-200 bg-emerald-50/40'
-                    : 'border-slate-200 bg-slate-50 opacity-60'
+                    : 'border-dashed border-slate-300 bg-slate-50'
               }`}
             >
               <div className="flex items-start gap-3">
                 {isDone ? (
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 mt-0.5" />
                 ) : isCurrent ? (
-                  <Loader2 className="h-5 w-5 shrink-0 animate-spin text-indigo-600 mt-0.5" />
+                  <Loader2 className="h-5 w-5 shrink-0 motion-safe:animate-spin text-indigo-600 mt-0.5" />
                 ) : (
                   <div className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 mt-0.5" />
                 )}
@@ -100,10 +107,10 @@ export const Screen5Processing: React.FC<Screen5ProcessingProps> = ({
                   <p className="mt-0.5 text-xs text-slate-600">{item.detail}</p>
                 </div>
               </div>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ol>
 
       <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
         <span>Procesando dentro de la ventana de decisión...</span>
