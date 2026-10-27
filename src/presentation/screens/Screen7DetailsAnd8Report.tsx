@@ -20,7 +20,8 @@ import { formatDateTime } from '../utils/formatDateTime';
 
 interface Screen7DetailsProps {
   result: VerificationResult;
-  onReportFraud: (reason: string) => void;
+  /** Devuelve el mensaje a mostrar (pendiente de moderación / guardado localmente). */
+  onReportFraud: (reason: string) => Promise<string>;
   onRequestSecondVerification: () => void;
   onGoToReport: () => void;
   onBackToVerdict: () => void;
@@ -37,15 +38,25 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
   const [hasReported, setHasReported] = useState(false);
   const [customReportReason, setCustomReportReason] = useState('');
   const [showReportBox, setShowReportBox] = useState(false);
+  const [reportMessage, setReportMessage] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
-  const handleConfirmReport = (e: React.FormEvent) => {
+  const handleConfirmReport = async (e: React.FormEvent) => {
     e.preventDefault();
-    onReportFraud(
-      customReportReason ||
-        `Confirmado como estafa por estudiante (${result.primaryReason})`
-    );
-    setHasReported(true);
-    setShowReportBox(false);
+    setIsSubmittingReport(true);
+    try {
+      const message = await onReportFraud(
+        customReportReason ||
+          `Confirmado como estafa por estudiante (${result.primaryReason})`
+      );
+      setReportMessage(message);
+      setHasReported(true);
+      setShowReportBox(false);
+    } catch {
+      setReportMessage('No pudimos enviar el reporte. Probá de nuevo en unos minutos.');
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
   return (
@@ -189,7 +200,7 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
                 </span>
                 <span className="mt-0.5 block text-[11px] text-slate-600">
                   {hasReported
-                    ? 'El CBU/Alias fue sumado a la base colaborativa.'
+                    ? 'Recibimos tu reporte.'
                     : 'Si lo comprobaste por tu cuenta, alertá a otros estudiantes.'}
                 </span>
               </div>
@@ -230,6 +241,10 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
             </button>
           </div>
 
+          <p aria-live="polite" className="mt-3 text-xs font-semibold text-slate-700">
+            {reportMessage}
+          </p>
+
           {showReportBox && !hasReported && (
             <form
               onSubmit={handleConfirmReport}
@@ -261,9 +276,10 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-rose-700"
+                  disabled={isSubmittingReport}
+                  className="rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-60"
                 >
-                  Confirmar reporte comunitario
+                  {isSubmittingReport ? 'Enviando…' : 'Confirmar reporte comunitario'}
                 </button>
               </div>
             </form>

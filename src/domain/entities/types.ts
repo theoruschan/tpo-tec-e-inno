@@ -71,6 +71,10 @@ export interface FraudDirectoryEntry {
   lastReportedAt: string;
   reason: string;
   source: 'Comunidad estudiantil' | 'Centro de Estudiantes' | 'Verificación usuario';
+  /** Directorio compartido: HMAC-SHA256 con sal secreta del CBU/alias normalizado. */
+  identifierHash?: string;
+  /** Directorio compartido: HMAC-SHA256 con sal secreta de los últimos 8 dígitos del teléfono. */
+  phoneHash?: string;
 }
 
 export interface ListingInput {

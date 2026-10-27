@@ -1,3 +1,4 @@
+import { InputIdentifierHashes } from '../ports/FraudDirectoryRepository';
 import {
   FraudDirectoryEntry,
   ListingInput,
@@ -30,7 +31,8 @@ export class IdentityCbuMatcher {
   public analyze(
     input: ListingInput,
     directory: FraudDirectoryEntry[],
-    zone: ZoneBenchmark
+    zone: ZoneBenchmark,
+    inputHashes: InputIdentifierHashes = {}
   ): IdentityAndDirectoryAnalysis {
     const findings: VerificationFinding[] = [];
     const matchedEntries: FraudDirectoryEntry[] = [];
@@ -40,20 +42,26 @@ export class IdentityCbuMatcher {
     const normUrl = input.listingUrlOrCapture.trim().toLowerCase();
 
     for (const entry of directory) {
+      // Entradas locales: comparación en claro. Entradas compartidas: solo por hash (exacto).
       const cbuMatches =
-        normCbu.length >= 4 &&
-        (entry.normalizedAliasOrCbu === normCbu ||
-          normCbu.includes(entry.normalizedAliasOrCbu) ||
-          entry.normalizedAliasOrCbu.includes(normCbu));
+        (normCbu.length >= 4 &&
+          entry.normalizedAliasOrCbu.length >= 4 &&
+          (entry.normalizedAliasOrCbu === normCbu ||
+            normCbu.includes(entry.normalizedAliasOrCbu) ||
+            entry.normalizedAliasOrCbu.includes(normCbu))) ||
+        (Boolean(entry.identifierHash) &&
+          entry.identifierHash === inputHashes.identifier);
 
       const entryPhone = entry.phoneContact
         ? normalizePhone(entry.phoneContact)
         : '';
+      // phoneContact enmascarado ("•••• 9918") deja 4 dígitos y no matchea en claro.
       const phoneMatches =
-        normPhone.length >= 7 &&
-        entryPhone.length >= 7 &&
-        (normPhone.endsWith(entryPhone.slice(-8)) ||
-          entryPhone.endsWith(normPhone.slice(-8)));
+        (normPhone.length >= 7 &&
+          entryPhone.length >= 7 &&
+          (normPhone.endsWith(entryPhone.slice(-8)) ||
+            entryPhone.endsWith(normPhone.slice(-8)))) ||
+        (Boolean(entry.phoneHash) && entry.phoneHash === inputHashes.phone);
 
       const urlMatches =
         Boolean(entry.listingUrlPattern) &&
@@ -76,7 +84,7 @@ export class IdentityCbuMatcher {
         category: 'cbu_directory',
         severity: 'critical',
         title: `CBU / Alias o contacto reportado ${totalReports} ${totalReports === 1 ? 'vez' : 'veces'} por estafa estudiantil`,
-        description: `El identificador "${primaryMatch.cbuOrAlias}" (asociado a ${primaryMatch.reportedHolderName}) figura en el Directorio Colaborativo de CuartoSeguro: ${primaryMatch.reason}`,
+        description: `El identificador "${primaryMatch.cbuOrAlias}" figura en el Directorio Colaborativo de CuartoSeguro: ${primaryMatch.reason}`,
         riskPoints: 58,
         evidenceDetail: `Fuente: ${primaryMatch.source} · Último reporte: ${primaryMatch.lastReportedAt} · Ciudad: ${primaryMatch.city}`,
       });

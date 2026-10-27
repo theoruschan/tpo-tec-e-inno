@@ -15,6 +15,8 @@ import {
   FraudDirectoryEntry,
   VerificationResult,
 } from '../../domain/entities/types';
+import { DirectorySourceKind } from '../../domain/ports/FraudDirectoryRepository';
+import { maskIdentifier, maskPhone } from '../../domain/services/IdentifierPrivacy';
 import { formatDateTime } from '../utils/formatDateTime';
 
 interface HistoryViewProps {
@@ -121,9 +123,22 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
 
 interface DirectoryViewProps {
   directory: FraudDirectoryEntry[];
+  sourceKind: DirectorySourceKind;
 }
 
-export const DirectoryView: React.FC<DirectoryViewProps> = ({ directory }) => {
+const DIRECTORY_SOURCE_NOTE: Record<DirectorySourceKind, string> = {
+  shared:
+    'Directorio compartido entre estudiantes. Los reportes de la Pantalla 7 entran como pendientes de moderación; solo se muestran identificadores aprobados o reportados por 3 estudiantes de forma independiente.',
+  local:
+    'Modo local: este directorio vive solo en tu navegador (datos semilla ficticios + tus reportes). No se comparte con otros estudiantes.',
+  'local-fallback':
+    'Sin conexión con el directorio compartido: se muestra la copia local de este navegador.',
+};
+
+export const DirectoryView: React.FC<DirectoryViewProps> = ({
+  directory,
+  sourceKind,
+}) => {
   const [query, setQuery] = useState('');
 
   const filtered = directory.filter((entry) => {
@@ -131,7 +146,6 @@ export const DirectoryView: React.FC<DirectoryViewProps> = ({ directory }) => {
     if (!q) return true;
     return (
       entry.cbuOrAlias.toLowerCase().includes(q) ||
-      entry.reportedHolderName.toLowerCase().includes(q) ||
       (entry.phoneContact && entry.phoneContact.toLowerCase().includes(q)) ||
       entry.city.toLowerCase().includes(q)
     );
@@ -148,9 +162,14 @@ export const DirectoryView: React.FC<DirectoryViewProps> = ({ directory }) => {
           Directorio Colaborativo de CBU, Alias y Reportes Cruzados
         </h1>
         <p className="mt-1 text-xs text-slate-600">
-          Base comunitaria consultable antes de transferir una seña. Cada vez
-          que un estudiante reporta una estafa confirmada en la Pantalla 7, se
-          indexa automáticamente acá.
+          Base comunitaria consultable antes de transferir una seña.
+        </p>
+        <p
+          className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-700"
+          data-testid="directory-source-note"
+        >
+          {DIRECTORY_SOURCE_NOTE[sourceKind]} Por privacidad se muestran CBU, alias y
+          teléfonos parciales y nunca nombres de personas.
         </p>
 
         <div className="mt-5">
@@ -158,13 +177,13 @@ export const DirectoryView: React.FC<DirectoryViewProps> = ({ directory }) => {
             htmlFor="directory-search"
             className="block text-xs font-bold text-slate-800"
           >
-            Buscar por CBU, Alias, Teléfono, Nombre o Ciudad
+            Buscar por CBU, Alias, Teléfono o Ciudad
           </label>
           <span
             id="directory-search-hint"
             className="mb-1 block text-xs text-slate-500"
           >
-            Pegá el alias bancario que te pasaron por WhatsApp para comprobar si tiene alertas
+            Filtra sobre la versión parcial. Para chequear un alias completo, usá la verificación: cruza por hash exacto.
           </span>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
@@ -190,7 +209,7 @@ export const DirectoryView: React.FC<DirectoryViewProps> = ({ directory }) => {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="rounded-lg bg-rose-100 px-2.5 py-1 font-mono text-xs font-bold text-rose-900">
-                  {entry.cbuOrAlias}
+                  {maskIdentifier(entry.cbuOrAlias)}
                 </span>
                 <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
                   {entry.city}
@@ -206,10 +225,11 @@ export const DirectoryView: React.FC<DirectoryViewProps> = ({ directory }) => {
               </span>
             </div>
 
-            <h2 className="mt-2.5 text-sm font-bold text-slate-900">
-              Titular / Anunciante reportado: {entry.reportedHolderName}
-              {entry.phoneContact ? ` (${entry.phoneContact})` : ''}
-            </h2>
+            {entry.phoneContact && (
+              <h2 className="mt-2.5 text-sm font-bold text-slate-900">
+                Teléfono reportado: {maskPhone(entry.phoneContact)}
+              </h2>
+            )}
             <p className="mt-1 text-xs text-slate-600">{entry.reason}</p>
           </div>
         ))}

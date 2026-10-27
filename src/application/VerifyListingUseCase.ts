@@ -7,6 +7,7 @@ import {
   VerificationResult,
   ZoneBenchmark,
 } from '../domain/entities/types';
+import { InputIdentifierHashes } from '../domain/ports/FraudDirectoryRepository';
 import { DataQualityValidator } from '../domain/services/DataQualityValidator';
 import { IdentityCbuMatcher } from '../domain/services/IdentityCbuMatcher';
 import { ImageMiningService } from '../domain/services/ImageMiningService';
@@ -16,6 +17,8 @@ export interface VerificationDependencies {
   zones: ZoneBenchmark[];
   knownImages: KnownImageSignature[];
   fraudDirectory: FraudDirectoryEntry[];
+  /** Hashes del CBU/alias y teléfono ingresados, para cruzar contra el directorio compartido. */
+  inputIdentifierHashes?: InputIdentifierHashes;
 }
 
 export class VerifyListingUseCase {
@@ -44,7 +47,8 @@ export class VerifyListingUseCase {
     const identityAnalysis = this.identityMatcher.analyze(
       input,
       deps.fraudDirectory,
-      zone
+      zone,
+      deps.inputIdentifierHashes
     );
 
     const allFindings = [

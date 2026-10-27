@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
-import { ReportFraudListingUseCase } from './application/ReportFraudListingUseCase';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RunExperimentBenchmarkUseCase } from './application/RunExperimentBenchmarkUseCase';
 import { VerifyListingUseCase } from './application/VerifyListingUseCase';
+import { DirectorySourceKind } from './domain/ports/FraudDirectoryRepository';
 import {
   FraudDirectoryEntry,
   ListingInput,
@@ -9,7 +9,9 @@ import {
   VerificationResult,
 } from './domain/entities/types';
 import { DataQualityValidator } from './domain/services/DataQualityValidator';
+import { createFraudDirectoryRepository } from './infrastructure/createFraudDirectoryRepository';
 import {
+  INITIAL_FRAUD_DIRECTORY,
   KNOWN_IMAGE_SIGNATURES,
   QUICK_DEMO_SCENARIOS,
   UNIVERSITY_ZONES,
@@ -42,7 +44,7 @@ import {
 
 const verifierUseCase = new VerifyListingUseCase();
 const qualityValidator = new DataQualityValidator();
-const reportFraudUseCase = new ReportFraudListingUseCase();
+const fraudRepository = createFraudDirectoryRepository(import.meta.env);
 const benchmarkUseCase = new RunExperimentBenchmarkUseCase();
 const imageHasher = new BrowserImageHasher();
 
@@ -53,6 +55,23 @@ export const App: React.FC = () => {
   const [fraudDirectory, setFraudDirectory] = useState<FraudDirectoryEntry[]>(
     () => LocalRepository.getFraudDirectory()
   );
+  const [directoryKind, setDirectoryKind] = useState<DirectorySourceKind>(
+    fraudRepository.kind
+  );
+
+  const refreshDirectory = async () => {
+    const entries = await fraudRepository.listActiveEntries();
+    setFraudDirectory(entries);
+    setDirectoryKind(fraudRepository.kind);
+  };
+
+  useEffect(() => {
+    void refreshDirectory();
+  }, []);
+
+  // La verificación es asíncrona (hash del CBU/teléfono en el servidor); la Pantalla 5
+  // espera esta promesa antes de mostrar el veredicto.
+  const pendingVerification = useRef<Promise<VerificationResult> | null>(null);
 
   const [history, setHistory] = useState<VerificationResult[]>(() =>
     LocalRepository.getVerificationHistory()
@@ -71,21 +90,28 @@ export const App: React.FC = () => {
     [draftInput]
   );
 
+  // El experimento corre siempre contra el directorio semilla fijo para que sea reproducible
+  // (no cambia porque alguien reporte algo nuevo en el directorio compartido).
   const benchmarkSummary = useMemo(
     () =>
       benchmarkUseCase.execute(EXPERIMENT_30_REAL_LISTINGS, {
         zones: UNIVERSITY_ZONES,
         knownImages: KNOWN_IMAGE_SIGNATURES,
-        fraudDirectory,
+        fraudDirectory: INITIAL_FRAUD_DIRECTORY,
       }),
-    [fraudDirectory]
+    []
   );
 
-  const runVerificationAndSave = (inputToVerify: ListingInput) => {
+  const runVerificationAndSave = async (inputToVerify: ListingInput) => {
+    const inputIdentifierHashes = await fraudRepository.hashIdentifiers(
+      inputToVerify.cbuOrAlias,
+      inputToVerify.ownerPhone
+    );
     const computed = verifierUseCase.execute(inputToVerify, {
       zones: UNIVERSITY_ZONES,
       knownImages: KNOWN_IMAGE_SIGNATURES,
       fraudDirectory,
+      inputIdentifierHashes,
     });
     setActiveResult(computed);
     const updatedHistory = [
@@ -113,14 +139,18 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleReportFraudFromDetails = (reason: string) => {
-    const updatedDir = reportFraudUseCase.execute(
-      activeResult.input,
+  const handleReportFraudFromDetails = async (reason: string) => {
+    const zone = UNIVERSITY_ZONES.find((z) => z.id === activeResult.input.zoneId);
+    const outcome = await fraudRepository.submitReport({
+      cbuOrAlias: activeResult.input.cbuOrAlias,
+      ownerPhone: activeResult.input.ownerPhone,
+      ownerName: activeResult.input.ownerName,
+      listingUrlOrCapture: activeResult.input.listingUrlOrCapture,
+      city: zone?.city ?? 'CABA',
       reason,
-      fraudDirectory
-    );
-    setFraudDirectory(updatedDir);
-    LocalRepository.saveFraudDirectory(updatedDir);
+    });
+    await refreshDirectory();
+    return outcome.message;
   };
 
   return (
@@ -167,7 +197,7 @@ export const App: React.FC = () => {
             quality={qualityCheck}
             onEditInput={() => setCurrentScreen('screen-3-input')}
             onContinueToProcessing={() => {
-              runVerificationAndSave(draftInput);
+              pendingVerification.current = runVerificationAndSave(draftInput);
               setCurrentScreen('screen-5-processing');
             }}
           />
@@ -175,7 +205,10 @@ export const App: React.FC = () => {
 
         {currentScreen === 'screen-5-processing' && (
           <Screen5Processing
-            onComplete={() => setCurrentScreen('screen-6-result')}
+            onComplete={async () => {
+              await pendingVerification.current;
+              setCurrentScreen('screen-6-result');
+            }}
           />
         )}
 
@@ -220,7 +253,7 @@ export const App: React.FC = () => {
         )}
 
         {currentScreen === 'view-directory' && (
-          <DirectoryView directory={fraudDirectory} />
+          <DirectoryView directory={fraudDirectory} sourceKind={directoryKind} />
         )}
 
         {currentScreen === 'view-experiment' && (

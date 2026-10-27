@@ -44,3 +44,5 @@ Todas las decisiones de producto, experiencia de usuario, arquitectura de softwa
    Diseño y resultados del **Experimento de 30 Anuncios Reales** definido en el Mapa de Oportunidad Tecnológica, matriz de confusión y métricas de efectividad.
 5. **[05-buenas-practicas-calidad-y-seguridad.md](./05-buenas-practicas-calidad-y-seguridad.md)**  
    Estándares de ingeniería aplicados: Clean Code, principios SOLID, tipado estricto, privacidad de datos ("solo información pública"), accesibilidad web (WCAG) y estrategia de testing automatizado.
+6. **[06-directorio-colaborativo-supabase.md](./06-directorio-colaborativo-supabase.md)**  
+   Directorio colaborativo compartido en Supabase: hash con sal secreta, enmascarado, moderación, regla de 3 reportes independientes y fallback offline.
