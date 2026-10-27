@@ -18,6 +18,7 @@ import {
 } from './infrastructure/data/datasets';
 import { EXPERIMENT_30_REAL_LISTINGS } from './infrastructure/data/experiment30Listings';
 import { BrowserImageHasher } from './infrastructure/image/BrowserImageHasher';
+import { JsPdfReportExporter } from './infrastructure/report/JsPdfReportExporter';
 import { LocalRepository } from './infrastructure/storage/LocalRepository';
 import { Navbar } from './presentation/components/Navbar';
 import {
@@ -47,6 +48,7 @@ const qualityValidator = new DataQualityValidator();
 const fraudRepository = createFraudDirectoryRepository(import.meta.env);
 const benchmarkUseCase = new RunExperimentBenchmarkUseCase();
 const imageHasher = new BrowserImageHasher();
+const pdfExporter = new JsPdfReportExporter();
 
 export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] =
@@ -238,6 +240,7 @@ export const App: React.FC = () => {
           <Screen8Report
             result={activeResult}
             onBackToDetails={() => setCurrentScreen('screen-7-details')}
+            pdfExporter={pdfExporter}
           />
         )}
 

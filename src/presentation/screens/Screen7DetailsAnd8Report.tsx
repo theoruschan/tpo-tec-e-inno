@@ -12,8 +12,11 @@ import {
   ShieldAlert,
   ShieldCheck,
   Info,
+  Printer,
 } from 'lucide-react';
+import { BuildVerificationReportUseCase } from '../../application/BuildVerificationReportUseCase';
 import { VerificationResult } from '../../domain/entities/types';
+import { ReportPdfExporter } from '../../domain/ports/ReportPdfExporter';
 import { PriceComparisonChart } from '../components/PriceComparisonChart';
 import { SupportDialog } from '../components/SupportDialog';
 import { formatDateTime } from '../utils/formatDateTime';
@@ -320,35 +323,81 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
 interface Screen8ReportProps {
   result: VerificationResult;
   onBackToDetails: () => void;
+  pdfExporter: ReportPdfExporter;
+}
+
+const reportBuilder = new BuildVerificationReportUseCase();
+
+function triggerDownload(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 export const Screen8Report: React.FC<Screen8ReportProps> = ({
   result,
   onBackToDetails,
+  pdfExporter,
 }) => {
-  const [copiedMessage, setCopiedMessage] = useState(false);
+  const [actionMessage, setActionMessage] = useState('');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const report = reportBuilder.execute(result);
 
-  const handlePrintOrDownloadPdf = () => {
-    window.print();
+  const handleDownloadPdf = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      const blob = await pdfExporter.toPdf(report);
+      triggerDownload(blob, reportBuilder.fileName(report));
+      setActionMessage('PDF descargado.');
+    } catch {
+      setActionMessage(
+        'No pudimos generar el PDF. Probá con "Imprimir" y elegí "Guardar como PDF".'
+      );
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const handleShareWithFamily = async () => {
-    const summaryText = [
-      `🛡️ *Reporte CuartoSeguro (${result.id})*`,
-      `• Fecha: ${formatDateTime(result.createdAt)}`,
-      `• Anuncio: ${result.input.listingUrlOrCapture}`,
-      `• Zona: ${result.priceComparison.zone.neighborhood} (${result.priceComparison.zone.city})`,
-      `• Veredicto: *${result.verdict.toUpperCase()}* (Confianza: ${result.confidenceLevel}%)`,
-      `• Motivo principal: ${result.primaryReason}`,
-      `• Recomendación antes de pagar seña: *${result.recommendation}*`,
-    ].join('\n');
+    const summaryText = reportBuilder.toShareText(report);
 
+    // 1) Web Share API (celulares): comparte el PDF si el navegador lo soporta, si no el texto.
+    if (typeof navigator.share === 'function') {
+      try {
+        let shareData: ShareData = { title: 'Reporte CuartoSeguro', text: summaryText };
+        try {
+          const pdf = new File(
+            [await pdfExporter.toPdf(report)],
+            reportBuilder.fileName(report),
+            { type: 'application/pdf' }
+          );
+          if (navigator.canShare?.({ files: [pdf] })) {
+            shareData = { ...shareData, files: [pdf] };
+          }
+        } catch {
+          // Sin PDF: se comparte solo el texto.
+        }
+        await navigator.share(shareData);
+        setActionMessage('Reporte compartido.');
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+      }
+    }
+
+    // 2) Fallback: copiar el resumen al portapapeles.
     try {
       await navigator.clipboard.writeText(summaryText);
-      setCopiedMessage(true);
-      window.setTimeout(() => setCopiedMessage(false), 3500);
+      setActionMessage('¡Resumen copiado para enviar por WhatsApp!');
     } catch {
-      setCopiedMessage(true);
+      setActionMessage(
+        'No pudimos copiar automáticamente. Seleccioná el texto del reporte y copialo a mano.'
+      );
     }
   };
 
@@ -478,7 +527,10 @@ export const Screen8Report: React.FC<Screen8ReportProps> = ({
           </ul>
         </div>
 
-        <p className="mt-5 text-[11px] text-slate-500">
+        <p className="mt-5 text-xs font-semibold text-amber-800">
+          {report.disclaimer}
+        </p>
+        <p className="mt-1 text-[11px] text-slate-500">
           Nota: Este reporte fue generado automáticamente cruzando búsqueda
           inversa de imágenes, estadísticas de precios por zona universitaria
           (BI) y el directorio colaborativo de CBU/reportes de CuartoSeguro. No
@@ -499,25 +551,36 @@ export const Screen8Report: React.FC<Screen8ReportProps> = ({
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={handleShareWithFamily}
-              className="inline-flex items-center gap-2 rounded-xl border border-indigo-300 bg-indigo-50 px-5 py-3 text-xs font-bold text-indigo-800 hover:bg-indigo-100"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-slate-600 hover:bg-slate-100"
             >
-              <Share2 className="h-4 w-4" />
-              {copiedMessage
-                ? '¡Resumen copiado para enviar por WhatsApp!'
-                : 'Compartir con quien vaya a pagar (ej. un familiar)'}
+              <Printer className="h-4 w-4" />
+              Imprimir
             </button>
 
             <button
               type="button"
-              onClick={handlePrintOrDownloadPdf}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-sm hover:bg-indigo-700"
+              onClick={handleShareWithFamily}
+              className="inline-flex items-center gap-2 rounded-xl border border-indigo-300 bg-indigo-50 px-5 py-3 text-xs font-bold text-indigo-800 hover:bg-indigo-100"
+            >
+              <Share2 className="h-4 w-4" />
+              Compartir con quien vaya a pagar (ej. un familiar)
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
             >
               <FileDown className="h-4 w-4" />
-              Descargar PDF / Imprimir
+              {isGeneratingPdf ? 'Generando PDF…' : 'Descargar PDF'}
             </button>
           </div>
         </div>
+        <p aria-live="polite" className="no-print mt-3 text-right text-xs font-semibold text-indigo-800">
+          {actionMessage}
+        </p>
       </div>
     </div>
   );
