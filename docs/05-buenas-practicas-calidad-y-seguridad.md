@@ -53,3 +53,25 @@ El proyecto incluye una suite de tests automatizados en `tests/` que verifica:
 3. **Cálculo Estadístico BI de Precios por Zona (Paso 2):** Cálculo exacto de porcentaje de desvío y Z-Score frente al promedio del barrio universitario.
 4. **Cruce con Directorio de CBU/Alias Fraudulentos y Reportes Comunitarios (Paso 3):** Detección inmediata de alias/CBU denunciados y actualización en vivo cuando un estudiante reporta una nueva estafa confirmada en la Pantalla 7.
 5. **Experimento de los 30 Anuncios Reales (Mapa Tecnológico):** Test integral que corre los 30 casos del experimento y comprueba que la sensibilidad de detección de estafas supera el umbral objetivo.
+
+---
+
+## 5. Evidencia medida (27/10/2026)
+
+**Lighthouse 12.2.1, perfil móvil, sobre https://tpo-tec-e-inno.vercel.app (home):**
+
+| Corrida | Performance | Accessibility | Best Practices | SEO | FCP | LCP | TBT | CLS |
+| :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| 1 | 99 | 100 | 100 | 100 | 1,7 s | 1,7 s | 40 ms | 0 |
+| 2 | 100 | 100 | 100 | 100 | 1,5 s | 1,5 s | 20 ms | 0 |
+
+Lighthouse solo mide la URL inicial. Las demás vistas de la SPA se auditaron con **axe-core 4.10.2** (reglas WCAG 2.0/2.1 A y AA + best practices): las 12 vistas (Pantallas 1 a 8, diálogo de soporte abierto, directorio, laboratorio e historial) quedaron en **0 violaciones**. También se verificó que a 375 px de ancho ninguna vista genera scroll horizontal.
+
+Cambios de accesibilidad que salieron de esa auditoría:
+- Pantalla 5: la región `aria-live` anuncia solo el paso actual (antes releía toda la tarjeta); los pasos son una lista ordenada con `aria-current="step"` y la animación respeta `prefers-reduced-motion`.
+- `<dialog>` de soporte: `aria-labelledby`/`aria-describedby`, foco inicial en el primer campo, retorno del foco al botón que lo abrió y contraste del botón cerrar.
+- Contraste de textos secundarios (pasos pendientes, fechas del historial) y orden de encabezados.
+
+**Rendimiento:** las pantallas 3 a 8 y las vistas auxiliares se cargan con `React.lazy` (un chunk por archivo) y jsPDF se descarga solo al pedir el PDF. Bundle inicial: 380 kB → 310 kB (gzip 110 → 95 kB).
+
+**Seguridad del deploy:** CSP sin `unsafe-eval` ni scripts externos, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY` y `Permissions-Policy` restrictiva (`vercel.json`).
