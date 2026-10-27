@@ -1,6 +1,6 @@
 # 06 — Directorio Colaborativo Compartido (ADR-006)
 
-**Estado:** Implementado en código · Migración pendiente de aplicar en Supabase
+**Estado:** Implementado y migración aplicada (27/10/2026) en el proyecto Supabase `tpo-tec e inno` (`pakcqhhecnlgkzznlytu`, región us-east-1)
 **Contexto:** Alternativas 6 (bot de reportes cruzados) y 11 (directorio de CBU/alias) del Entregable 3.
 
 ---
@@ -57,6 +57,28 @@ La migración carga los 5 casos ficticios del prototipo como reportes aprobados 
 - `IdentityCbuMatcher` compara en claro contra entradas locales (como antes) y **solo por hash exacto** contra entradas compartidas. Se pierde el match por substring en modo compartido.
 - El hallazgo ya no incluye el nombre del titular.
 - El **experimento de 30 anuncios** corre siempre contra el directorio semilla fijo (`INITIAL_FRAUD_DIRECTORY`), para que sus métricas no cambien cuando alguien reporta algo nuevo.
+
+## Verificación en el proyecto real (27/10/2026)
+
+Pruebas hechas con la clave publishable (la misma que usa el cliente):
+
+| Prueba | Resultado |
+| :--- | :--- |
+| `get_public_fraud_directory` | 200 · 5 identificadores semilla, solo versiones enmascaradas |
+| `hash_identifiers(" ALQUILER.facil.ya.mp ", "011 15 6402-9918")` | 200 · mismos hashes que la semilla (normaliza mayúsculas, espacios y prefijos) |
+| `GET /fraud_reports?select=identifier_masked,status` | 200 · solo filas `approved` |
+| `GET /fraud_reports?select=reporter_hash` | 401 · permiso denegado |
+| `POST` / `PATCH` directo a `fraud_reports` | 401 · permiso denegado |
+| Leer el schema `private` (sal) | 406 · schema no expuesto |
+| Mismo dispositivo reporta dos veces | 1 sola fila |
+| 2 reportes independientes de un alias nuevo | No aparece en el directorio |
+| 3 reportes independientes | Aparece, con el texto genérico (no el motivo sin moderar) |
+| Reporte desde la Pantalla 7 de la app | Fila `pending` con alias/teléfono enmascarados y hasheados, sin nombre |
+| Escenario "Alerta CBU Denunciado" en la app | Detectado solo por hash ("reportado 7 veces") |
+
+Las filas de prueba se borraron; la tabla quedó con los 25 reportes semilla.
+
+**Advertencias del linter de Supabase aceptadas:** `anon_security_definer_function_executable` y `authenticated_security_definer_function_executable` sobre las 3 RPC. Son intencionales: `SECURITY DEFINER` es lo que les permite usar la sal del schema `private` sin exponerla. Las tres tienen `search_path = ''` y validan sus entradas. No hay advertencias de RLS.
 
 ## Configuración
 

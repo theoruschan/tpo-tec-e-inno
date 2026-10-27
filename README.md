@@ -32,7 +32,7 @@ El resultado es un veredicto (`Anuncio sospechoso` / `Verificado` / `Sin datos s
 | Base de fotos conocidas | **Semilla de 5 fotos.** No es una búsqueda en toda la web ni en los portales en vivo. Una captura de pantalla completa puede no coincidir; conviene subir la foto o un recorte. |
 | Precios promedio por zona | **Datos semilla** cargados a mano para el TP, no un relevamiento actualizado. |
 | Matrícula / registros públicos | **No se consulta ningún padrón real.** Solo se usa lo que declara el estudiante. |
-| Directorio de CBU/alias | Código y migración listos para **Supabase** (compartido, hasheado, con moderación). **Mientras no se configure, funciona en modo local** (solo en ese navegador, con 5 casos ficticios). |
+| Directorio de CBU/alias | **Real y compartido en Supabase**: CBU/alias/teléfono guardados como HMAC con sal secreta, enmascarados al mostrarse, reportes nuevos en moderación y regla de 3 reportes independientes. Los 5 casos semilla son **ficticios**. Si Supabase no responde, la app cae al modo local y lo indica. "Independiente" = otro navegador/dispositivo: no frena a alguien decidido a abusar. |
 | Experimento de 30 anuncios | **Dataset curado e ilustrativo.** El 100% de recall se mide sobre los mismos casos usados para calibrar las reglas: **no es una validación independiente**. La app permite cargar un CSV/JSON propio y separa calibración y evaluación ([docs/04](./docs/04-experimento-validacion-30-anuncios.md)). |
 | Soporte humano (Pantalla 7) | **Demo.** El formulario no envía la consulta a nadie y lo dice. |
 | Reporte PDF y compartir | **Real** (jsPDF por import dinámico; Web Share API con fallback a copiar texto). |
