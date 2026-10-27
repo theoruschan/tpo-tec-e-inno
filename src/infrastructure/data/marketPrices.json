@@ -1,0 +1,36 @@
+{
+  "updatedAt": "2026-10-27",
+  "sources": [
+    {
+      "id": "zonaprop-caba",
+      "city": "CABA",
+      "label": "Zonaprop Index CABA",
+      "period": "2026-09",
+      "url": "https://www.zonaprop.com.ar/blog/wp-content/uploads/2026/10/INDEX_CABA_REPORTE_2026-09.pdf",
+      "prices": {
+        "studio": 779370,
+        "two_rooms": 898154
+      }
+    },
+    {
+      "id": "zonaprop-cba",
+      "city": "Córdoba",
+      "label": "Zonaprop Index Córdoba",
+      "period": "2026-03",
+      "url": "https://www.zonaprop.com.ar/blog/wp-content/uploads/2026/04/INDEX_CBA_REPORTE_2026-03.pdf",
+      "prices": {
+        "two_rooms": 619061
+      }
+    },
+    {
+      "id": "zonaprop-gba-sur",
+      "city": "La Plata",
+      "label": "Zonaprop Index GBA Sur (promedio regional, incluye La Plata)",
+      "period": "2026-09",
+      "url": "https://www.zonaprop.com.ar/blog/wp-content/uploads/2026/10/INDEX_GBA_SUR_REPORTE_2026-09.pdf",
+      "prices": {
+        "two_rooms": 643213
+      }
+    }
+  ]
+}
