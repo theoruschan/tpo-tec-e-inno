@@ -48,6 +48,8 @@ export interface ZoneBenchmark {
 
 export interface KnownImageSignature {
   imageHash: string;
+  /** dHash de 64 bits (16 hex) de la foto original, para comparar por distancia de Hamming. */
+  perceptualHash?: string;
   title: string;
   originalSource: string;
   originalCity: string;
@@ -84,7 +86,10 @@ export interface ListingInput {
   cbuOrAlias: string;
   accountAgeMonths: number;
   photoCount: number;
+  /** Selección manual de una firma conocida (panel avanzado/demo). */
   imageSignatureHash: string;
+  /** dHash calculado automáticamente a partir de la foto/captura subida. */
+  uploadedImageDHash?: string;
   requestsAdvanceBeforeVisit: boolean;
   isRegisteredRealEstate: boolean;
   realEstateLicense?: string;

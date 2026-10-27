@@ -52,6 +52,17 @@ Simula y ejecuta la búsqueda inversa de fotografías y el cruce de texto/URL co
 - **Fotos consistentes y sin duplicados sospechosos detectados:**
   - *Impacto en confianza positiva:* Evidencia de autenticidad visual.
 
+#### Implementación real de la búsqueda inversa (huella perceptual dHash)
+
+> **Alcance honesto:** la comparación se hace contra una **base semilla de 5 fotos conocidas** (`KNOWN_IMAGE_SIGNATURES` en `src/infrastructure/data/datasets.ts`). **No es una búsqueda en toda la web** ni en los portales en vivo; solo detecta la reutilización de fotos que ya están en esa base. La UI de la Pantalla 3 lo aclara junto al resultado.
+
+- **Cálculo (en el navegador, la foto no sale del dispositivo):** `BrowserImageHasher` (infraestructura, implementa el puerto `ImageHasher` del dominio) decodifica la imagen con `createImageBitmap`, la dibuja en un canvas de 144×128, promedia bloques de 16×16 hasta una grilla 9×8 de luminancia y `computeDHashFromGrayscale` (dominio puro) genera 64 bits: cada bit indica si un bloque es más claro que su vecino derecho.
+- **Comparación:** `hammingDistance` cuenta los bits distintos; `findClosestPerceptualMatch` devuelve la firma más cercana con distancia `≤ DEFAULT_DHASH_MATCH_THRESHOLD = 10` (configurable por constructor en `ImageMiningService`). La evidencia del hallazgo muestra la distancia, p. ej. `Distancia de Hamming: 3/64 (umbral ≤ 10)`.
+- **Calibración del umbral (medido el 27/10/2026 sobre las 5 fotos semilla):** la misma foto recomprimida a 240 px / calidad 35 quedó a distancia **0–2**; fotos distintas entre sí, a **18–37**. El umbral 10 queda en el medio con margen para ambos lados.
+- **Límites conocidos:** una captura de pantalla completa (con texto, botones y bordes alrededor de la foto) cambia la composición y puede no coincidir; conviene subir la foto o un recorte. Recortes fuertes, espejados o rotaciones tampoco se detectan con dHash. Dos fotos distintas con la misma composición dominante (p. ej. un gradiente de luz fuerte) pueden quedar más cerca de lo esperable.
+- **Modo manual/demo:** el selector de firma conocida sigue disponible en el panel "Avanzado / demo" de la Pantalla 3; si se sube una foto, la huella automática tiene prioridad.
+- **Tests:** `tests/perceptualHash.test.ts` usa fotos sintéticas generadas por código (PRNG con semilla, sin imágenes con derechos) para validar distancia de Hamming, tolerancia a brillo/ruido/redimensionado, umbral inclusivo y prioridad automática sobre manual.
+
 ---
 
 ### Paso 2 de 3: Business Intelligence (BI) de Precios por Zona (`ZonePriceBiService`)

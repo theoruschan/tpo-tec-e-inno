@@ -15,6 +15,7 @@ import {
   UNIVERSITY_ZONES,
 } from './infrastructure/data/datasets';
 import { EXPERIMENT_30_REAL_LISTINGS } from './infrastructure/data/experiment30Listings';
+import { BrowserImageHasher } from './infrastructure/image/BrowserImageHasher';
 import { LocalRepository } from './infrastructure/storage/LocalRepository';
 import { Navbar } from './presentation/components/Navbar';
 import {
@@ -43,6 +44,7 @@ const verifierUseCase = new VerifyListingUseCase();
 const qualityValidator = new DataQualityValidator();
 const reportFraudUseCase = new ReportFraudListingUseCase();
 const benchmarkUseCase = new RunExperimentBenchmarkUseCase();
+const imageHasher = new BrowserImageHasher();
 
 export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] =
@@ -156,6 +158,7 @@ export const App: React.FC = () => {
             onChange={setDraftInput}
             onBack={() => setCurrentScreen('screen-2-instructions')}
             onSubmitToQualityGate={() => setCurrentScreen('screen-4-quality')}
+            imageHasher={imageHasher}
           />
         )}
 

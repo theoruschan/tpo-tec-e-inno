@@ -26,7 +26,9 @@ export class DataQualityValidator {
 
     const hasSufficientPhotos =
       input.photoCount >= 2 ||
-      (input.photoCount >= 1 && Boolean(input.imageSignatureHash.trim()));
+      (input.photoCount >= 1 &&
+        (Boolean(input.imageSignatureHash.trim()) ||
+          Boolean(input.uploadedImageDHash)));
 
     const warnings: string[] = [];
 

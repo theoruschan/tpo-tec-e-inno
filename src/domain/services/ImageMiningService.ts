@@ -3,9 +3,16 @@ import {
   ListingInput,
   VerificationFinding,
 } from '../entities/types';
+import {
+  DEFAULT_DHASH_MATCH_THRESHOLD,
+  DHASH_BITS,
+  findClosestPerceptualMatch,
+} from './PerceptualHash';
 
 export interface ImageMiningAnalysis {
   matchedSignature?: KnownImageSignature;
+  /** Distancia de Hamming cuando la coincidencia vino del dHash de la foto subida. */
+  perceptualDistance?: number;
   findings: VerificationFinding[];
 }
 
@@ -14,6 +21,10 @@ export interface ImageMiningAnalysis {
  * Data Mining — Búsqueda inversa de imágenes y detección de anuncios duplicados.
  */
 export class ImageMiningService {
+  constructor(
+    private readonly dHashThreshold: number = DEFAULT_DHASH_MATCH_THRESHOLD
+  ) {}
+
   public analyze(
     input: ListingInput,
     knownSignatures: KnownImageSignature[]
@@ -21,9 +32,26 @@ export class ImageMiningService {
     const findings: VerificationFinding[] = [];
     const normalizedHash = input.imageSignatureHash.trim().toLowerCase();
 
-    const matched = knownSignatures.find(
-      (sig) => sig.imageHash.toLowerCase() === normalizedHash
-    );
+    // 1) Coincidencia perceptual automática (dHash de la foto subida, tolera recompresión/recorte leve)
+    const perceptualMatch = input.uploadedImageDHash
+      ? findClosestPerceptualMatch(
+          input.uploadedImageDHash,
+          knownSignatures,
+          this.dHashThreshold
+        )
+      : undefined;
+
+    // 2) Selección manual del panel avanzado/demo
+    const manualMatch = normalizedHash
+      ? knownSignatures.find(
+          (sig) => sig.imageHash.toLowerCase() === normalizedHash
+        )
+      : undefined;
+
+    const matched = perceptualMatch?.signature ?? manualMatch;
+    const matchEvidence = perceptualMatch
+      ? `dHash subido: ${input.uploadedImageDHash} · Distancia de Hamming: ${perceptualMatch.distance}/${DHASH_BITS} (umbral ≤ ${this.dHashThreshold})`
+      : `Firma seleccionada manualmente (modo demo): ${matched?.imageHash ?? ''}`;
 
     if (matched && matched.isStolenOrReusedPattern) {
       findings.push({
@@ -33,7 +61,7 @@ export class ImageMiningService {
         title: 'Esta foto aparece en otro anuncio con un precio distinto',
         description: `La búsqueda inversa detectó la misma fotografía publicada originalmente en "${matched.originalSource}" (${matched.originalCity}) a un valor de $${matched.originalPriceArs.toLocaleString('es-AR')}. ${matched.notes}`,
         riskPoints: 46,
-        evidenceDetail: `Hash perceptual: ${matched.imageHash} · Fuente original: ${matched.originalSource}`,
+        evidenceDetail: `${matchEvidence} · Fuente original: ${matched.originalSource}`,
       });
     } else if (matched && !matched.isStolenOrReusedPattern) {
       findings.push({
@@ -43,7 +71,7 @@ export class ImageMiningService {
         title: 'Fotografías sin duplicados fraudulentos en otras plataformas',
         description: `Las imágenes del aviso coinciden únicamente con la publicación original en ${matched.originalSource} (${matched.originalCity}) y no registran reutilización en denuncias de estafa.`,
         riskPoints: 0,
-        evidenceDetail: `Hash perceptual verificado: ${matched.imageHash}`,
+        evidenceDetail: matchEvidence,
       });
     } else {
       findings.push({
@@ -51,8 +79,9 @@ export class ImageMiningService {
         category: 'image_mining',
         severity: 'positive',
         title: 'No se hallaron copias de la foto en anuncios denunciados',
-        description:
-          'La búsqueda inversa sobre la base de anuncios estudiantiles y portales temporales no arrojó duplicaciones sospechosas.',
+        description: input.uploadedImageDHash
+          ? `La huella de la foto subida no coincide con ninguna de las ${knownSignatures.length} fotos de la base semilla de CuartoSeguro. Ojo: es un dataset acotado de fotos ya reportadas, no una búsqueda en toda la web.`
+          : 'No se subió una foto para comparar ni se eligió una firma conocida. La búsqueda inversa se hace contra la base semilla de CuartoSeguro, no contra toda la web.',
         riskPoints: 0,
       });
     }
@@ -71,6 +100,7 @@ export class ImageMiningService {
 
     return {
       matchedSignature: matched,
+      perceptualDistance: perceptualMatch?.distance,
       findings,
     };
   }

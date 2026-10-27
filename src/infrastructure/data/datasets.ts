@@ -104,9 +104,15 @@ export const UNIVERSITY_ZONES: ZoneBenchmark[] = [
   },
 ];
 
+/**
+ * Base SEMILLA de fotos conocidas (5 imágenes). No es un índice de toda la web:
+ * la búsqueda inversa solo detecta reutilización de estas fotos.
+ * `perceptualHash` = dHash 64 bits calculado con BrowserImageHasher sobre thumbnailUrl.
+ */
 export const KNOWN_IMAGE_SIGNATURES: KnownImageSignature[] = [
   {
     imageHash: 'hash-airbnb-palermo-8821',
+    perceptualHash: '1e9a9abab89983a3',
     title: 'Monoambiente luminoso balcón deck madera',
     originalSource: 'Airbnb Superhost — Alquiler temporario turístico (ID #88219)',
     originalCity: 'CABA (Palermo Hollywood)',
@@ -117,6 +123,7 @@ export const KNOWN_IMAGE_SIGNATURES: KnownImageSignature[] = [
   },
   {
     imageHash: 'hash-zonaprop-recoleta-4410',
+    perceptualHash: '33b626a63a682e16',
     title: 'Habitación en piso clásico francés sobre Av. Santa Fe',
     originalSource: 'Zonaprop — Aviso de venta de departamento (Inmobiliaria Achával)',
     originalCity: 'CABA (Recoleta)',
@@ -127,6 +134,7 @@ export const KNOWN_IMAGE_SIGNATURES: KnownImageSignature[] = [
   },
   {
     imageHash: 'hash-booking-madrid-1092',
+    perceptualHash: '3838793b1d93991c',
     title: 'Estudio moderno minimalista con escritorio nórdico',
     originalSource: 'Booking.com — Apartamentos Malasaña Suites',
     originalCity: 'Madrid, España',
@@ -137,6 +145,7 @@ export const KNOWN_IMAGE_SIGNATURES: KnownImageSignature[] = [
   },
   {
     imageHash: 'hash-depto-cba-duplicado-3319',
+    perceptualHash: '7434a5e5a4a1a5a5',
     title: 'Departamento 1 dormitorio balcón frente a Parque Las Tejas',
     originalSource: 'Clasificados La Voz — Publicado por otro titular en 2024',
     originalCity: 'Córdoba (Nueva Córdoba)',
@@ -147,6 +156,7 @@ export const KNOWN_IMAGE_SIGNATURES: KnownImageSignature[] = [
   },
   {
     imageHash: 'hash-residencia-uade-legit-001',
+    perceptualHash: '1011191111911010',
     title: 'Cuarto individual en residencia estudiantil Lima 700',
     originalSource: 'Portal Residencias Universitarias CABA (Verificado)',
     originalCity: 'CABA (Monserrat)',

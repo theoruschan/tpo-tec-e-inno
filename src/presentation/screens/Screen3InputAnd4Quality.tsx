@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Upload,
   CheckCircle2,
@@ -7,11 +7,19 @@ import {
   ArrowRight,
   Edit3,
   Sparkles,
+  ScanSearch,
+  Loader2,
 } from 'lucide-react';
 import {
   DataQualityCheckResult,
   ListingInput,
 } from '../../domain/entities/types';
+import { ImageHasher } from '../../domain/ports/ImageHasher';
+import {
+  DEFAULT_DHASH_MATCH_THRESHOLD,
+  DHASH_BITS,
+  findClosestPerceptualMatch,
+} from '../../domain/services/PerceptualHash';
 import {
   KNOWN_IMAGE_SIGNATURES,
   QUICK_DEMO_SCENARIOS,
@@ -23,30 +31,60 @@ interface Screen3InputProps {
   onChange: (updated: ListingInput) => void;
   onSubmitToQualityGate: () => void;
   onBack: () => void;
+  imageHasher: ImageHasher<Blob>;
 }
+
+type HashingState =
+  | { status: 'idle' }
+  | { status: 'hashing' }
+  | { status: 'error'; message: string };
 
 export const Screen3Input: React.FC<Screen3InputProps> = ({
   input,
   onChange,
   onSubmitToQualityGate,
   onBack,
+  imageHasher,
 }) => {
+  // El hash es asíncrono: guardamos el último input para no pisar lo que se tipeó mientras tanto.
+  const latestInput = useRef(input);
+  latestInput.current = input;
+  const [hashing, setHashing] = useState<HashingState>({ status: 'idle' });
+
+  const perceptualMatch = input.uploadedImageDHash
+    ? findClosestPerceptualMatch(input.uploadedImageDHash, KNOWN_IMAGE_SIGNATURES)
+    : undefined;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmitToQualityGate();
   };
 
-  const handleSimulatedFileUpload = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      onChange({
-        ...input,
-        hasCaptureUploaded: true,
-        captureFileName: file.name,
-        listingUrlOrCapture:
-          input.listingUrlOrCapture || `captura://${file.name}`,
+    if (!file) return;
+
+    onChange({
+      ...input,
+      hasCaptureUploaded: true,
+      captureFileName: file.name,
+      uploadedImageDHash: undefined,
+      listingUrlOrCapture:
+        input.listingUrlOrCapture || `captura://${file.name}`,
+    });
+
+    setHashing({ status: 'hashing' });
+    try {
+      const dHash = await imageHasher.hash(file);
+      onChange({ ...latestInput.current, uploadedImageDHash: dHash });
+      setHashing({ status: 'idle' });
+    } catch (error) {
+      setHashing({
+        status: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'No pudimos leer la imagen para calcular su huella.',
       });
     }
   };
@@ -121,10 +159,10 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
               htmlFor="capture-upload"
               className="block text-xs font-bold text-slate-800"
             >
-              Adjuntar captura (opcional)
+              Adjuntar foto o captura (opcional)
             </label>
             <span className="mb-1 block text-xs text-slate-500">
-              Si es de chat o historia IG
+              Se compara contra fotos ya reportadas
             </span>
             <label
               htmlFor="capture-upload"
@@ -140,11 +178,63 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
                 id="capture-upload"
                 type="file"
                 accept="image/*"
-                onChange={handleSimulatedFileUpload}
+                onChange={handleFileUpload}
                 className="sr-only"
               />
             </label>
           </div>
+        </div>
+
+        <div
+          aria-live="polite"
+          className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-700"
+        >
+          <p className="flex items-center gap-1.5 font-bold text-slate-800">
+            <ScanSearch className="h-4 w-4 text-indigo-600" />
+            Búsqueda inversa de la foto (huella perceptual dHash, calculada en tu navegador)
+          </p>
+          {hashing.status === 'hashing' && (
+            <p className="mt-1 flex items-center gap-1.5">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Calculando la huella de la imagen…
+            </p>
+          )}
+          {hashing.status === 'error' && (
+            <p className="mt-1 font-semibold text-red-700">{hashing.message}</p>
+          )}
+          {hashing.status === 'idle' && input.uploadedImageDHash && (
+            <p className="mt-1">
+              Huella: <code className="font-mono">{input.uploadedImageDHash}</code> ·{' '}
+              {perceptualMatch ? (
+                <strong
+                  className={
+                    perceptualMatch.signature.isStolenOrReusedPattern
+                      ? 'text-red-700'
+                      : 'text-emerald-700'
+                  }
+                >
+                  Coincide con «{perceptualMatch.signature.title}» (distancia{' '}
+                  {perceptualMatch.distance}/{DHASH_BITS}, umbral ≤{' '}
+                  {DEFAULT_DHASH_MATCH_THRESHOLD})
+                </strong>
+              ) : (
+                <strong>
+                  Sin coincidencias en la base semilla ({KNOWN_IMAGE_SIGNATURES.length} fotos)
+                </strong>
+              )}
+            </p>
+          )}
+          {hashing.status === 'idle' && !input.uploadedImageDHash && (
+            <p className="mt-1">
+              {input.imageSignatureHash
+                ? `Modo demo: se usa la firma elegida manualmente en "Avanzado / demo" (${input.imageSignatureHash}). Subí una foto para reemplazarla por la huella real.`
+                : 'Subí la foto del aviso para compararla automáticamente.'}
+            </p>
+          )}
+          <p className="mt-1 text-[11px] text-slate-500">
+            Límite: se compara contra un dataset semilla de fotos ya reportadas, no
+            contra toda la web. Funciona mejor con la foto del aviso o un recorte; una
+            captura de pantalla completa (con texto y botones) puede no coincidir.
+          </p>
         </div>
 
         {/* Ciudad / Zona y Montos */}
@@ -324,36 +414,6 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
           <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-3">
             <div>
               <label
-                htmlFor="photo-signature"
-                className="block text-xs font-semibold text-slate-800"
-              >
-                Huella visual / Foto del anuncio (Búsqueda inversa)
-              </label>
-              <span className="mb-1 block text-[11px] text-slate-500">
-                Simula el hash perceptual extraído de la foto
-              </span>
-              <select
-                id="photo-signature"
-                value={input.imageSignatureHash}
-                onChange={(e) =>
-                  onChange({ ...input, imageSignatureHash: e.target.value })
-                }
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs focus:border-indigo-600 focus:outline-none"
-              >
-                <option value="">
-                  Foto nueva / Sin coincidencias en otros portales
-                </option>
-                {KNOWN_IMAGE_SIGNATURES.map((sig) => (
-                  <option key={sig.imageHash} value={sig.imageHash}>
-                    {sig.isStolenOrReusedPattern ? '⚠️ Duplicada: ' : '✅ Verificada: '}
-                    {sig.title} ({sig.originalCity})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label
                 htmlFor="photo-count"
                 className="block text-xs font-semibold text-slate-800"
               >
@@ -404,6 +464,41 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
               />
             </div>
           </div>
+
+          <details className="rounded-xl border border-slate-200 bg-white p-3">
+            <summary className="cursor-pointer text-xs font-semibold text-slate-700">
+              Avanzado / demo: elegir manualmente una foto conocida
+            </summary>
+            <label
+              htmlFor="photo-signature"
+              className="mt-2 block text-xs font-semibold text-slate-800"
+            >
+              Firma de la base semilla
+            </label>
+            <span id="photo-signature-hint" className="mb-1 block text-[11px] text-slate-500">
+              Para probar el flujo sin subir una imagen. Si subiste una foto, su huella
+              automática tiene prioridad.
+            </span>
+            <select
+              id="photo-signature"
+              value={input.imageSignatureHash}
+              onChange={(e) =>
+                onChange({ ...input, imageSignatureHash: e.target.value })
+              }
+              aria-describedby="photo-signature-hint"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs focus:border-indigo-600 focus:outline-none"
+            >
+              <option value="">
+                Ninguna (sin coincidencia manual)
+              </option>
+              {KNOWN_IMAGE_SIGNATURES.map((sig) => (
+                <option key={sig.imageHash} value={sig.imageHash}>
+                  {sig.isStolenOrReusedPattern ? '⚠️ Duplicada: ' : '✅ Verificada: '}
+                  {sig.title} ({sig.originalCity})
+                </option>
+              ))}
+            </select>
+          </details>
 
           <div className="flex flex-wrap items-center gap-6 pt-1 text-xs text-slate-700">
             <label className="inline-flex items-center gap-2 cursor-pointer">
