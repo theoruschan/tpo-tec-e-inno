@@ -192,6 +192,9 @@ export const Screen6Result: React.FC<Screen6ResultProps> = ({
             <span className="text-2xl font-black text-slate-900">
               {result.confidenceLevel}%
             </span>
+            <span className="mt-0.5 block text-[10px] text-slate-600">
+              Índice del motor, no una probabilidad
+            </span>
           </div>
         </div>
 

@@ -108,7 +108,7 @@ export class VerifyListingUseCase {
         'Faltan datos de contacto del propietario o fotos suficientes para confirmar la autenticidad del anuncio.';
     } else if (hasCriticalAlert || riskScore >= 40) {
       verdict = 'Anuncio sospechoso';
-      // Escala de confianza calibrada: ej. foto duplicada (46) + seña/precio (15-34) -> ~82%
+      // Índice (no probabilidad), 72-89 %. Se satura: todo riesgo >= 100 da 89 % (ver docs/03, sección 4).
       confidenceLevel = Math.min(98, Math.max(72, Math.round(64 + riskScore * 0.25)));
       recommendation = 'No transferir';
 

@@ -32,7 +32,7 @@ describe('CuartoSeguro — Motor de Verificación y Experimento de 30 Anuncios',
     expect(quality.blockingMessage).toBe(MISSING_CONTACT_BLOCKING_MESSAGE);
   });
 
-  it('Pantalla 6 (Caso Prototipo): detecta foto duplicada en otro anuncio y precio bajo con veredicto "Anuncio sospechoso" y nivel de confianza ~82%', () => {
+  it('Pantalla 6 (Caso Prototipo): detecta foto duplicada en otro anuncio y precio bajo con veredicto "Anuncio sospechoso" y un nivel de confianza entre 80 y 92 % (hoy 89 %; el 82 % del PDF es ilustrativo)', () => {
     const verifier = new VerifyListingUseCase();
     const prototypeScenario = QUICK_DEMO_SCENARIOS[0].input;
 

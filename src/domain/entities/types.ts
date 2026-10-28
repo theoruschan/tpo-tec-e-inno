@@ -184,7 +184,7 @@ export interface VerificationResult {
   input: ListingInput;
   qualityCheck: DataQualityCheckResult;
   verdict: VerdictType;
-  confidenceLevel: number; // 0 a 100 (ej. 82%)
+  confidenceLevel: number; // 0 a 100. Índice del motor, no una probabilidad calibrada.
   riskScore: number; // 0 a 100
   primaryReason: string;
   recommendation: RecommendationType;

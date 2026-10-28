@@ -12,7 +12,7 @@ El **Mapa de Oportunidad Tecnológica** establece explícitamente:
 
 Además, la **Pantalla 6** y la **Pantalla 7** del prototipo exigen mostrar:
 - Un **Veredicto claro**: `Anuncio sospechoso` | `Verificado` | `Sin datos suficientes`.
-- Un **Nivel de confianza** expresado en porcentaje (ej. `82%`).
+- Un **Nivel de confianza** expresado en porcentaje (el `82%` del prototipo es una cifra ilustrativa; ver sección 4).
 - Un **Motivo principal** legible por humanos (ej. *"Esta foto aparece en otro anuncio con un precio distinto"*).
 - El **desglose individual** de cada alerta en la pantalla de detalles.
 
@@ -130,9 +130,11 @@ El motor acumula un `riskScore` acotado en $[0, 100]$ y un indicador de completi
 
 | Condición | Veredicto (`verdict`) | Nivel de Confianza (`confidenceLevel`) | Recomendación (`recommendation`) |
 | :--- | :--- | :--- | :--- |
-| Faltan datos esenciales (sin contacto o sin precio/imagen legible) | **`Sin datos suficientes`** | $35\% - 55\%$ (según datos presentes) | **Pedir más información** |
-| `riskScore >= 40` o al menos 1 Alerta Crítica (Foto robada, CBU denunciado o Precio anzuelo extremo) | **`Anuncio sospechoso`** | $\min(98\%, 65\% + \lfloor \text{riskScore} \times 0.32 \rfloor)$ (ej. **82%** en caso típico de foto duplicada + precio bajo) | **No transferir** |
-| `25 <= riskScore < 40` (señales grises sin evidencia concluyente) | **`Sin datos suficientes`** | $55\% - 68\%$ | **Pedir más información** |
-| `riskScore < 25` y datos de contacto/fotos completos | **`Verificado`** | $\min(96\%, 78\% + \text{bono de validación registral})$ | **Transferir (con recaudos habituales)** |
+| Faltan datos esenciales (sin contacto o sin link/captura legible) y no hay alerta crítica | **`Sin datos suficientes`** | $\max(38\%, \min(58\%, \text{completenessScore}))$ | **Pedir más información** |
+| `riskScore >= 40` o al menos 1 Alerta Crítica (Foto robada, CBU denunciado o Precio anzuelo extremo) | **`Anuncio sospechoso`** | $\min(98\%, \max(72\%, \text{round}(64 + \text{riskScore} \times 0.25)))$ → entre **72 %** y **89 %** (con `riskScore` acotado a 100) | **No transferir** |
+| `24 <= riskScore < 40` sin alerta crítica, o fotos insuficientes (señales grises sin evidencia concluyente) | **`Sin datos suficientes`** | $62\%$ (fijo) | **Pedir más información** |
+| `riskScore < 24` y datos de contacto/fotos completos | **`Verificado`** | $\min(96\%, \text{round}(78 + (24 - \text{riskScore}) \times 0.45 + \text{bono}))$, con bono de $8$ si declaró matrícula | **Transferir (con recaudos habituales)** |
 
-> **Nota sobre el ejemplo del Prototipo (Pantalla 6):** Cuando un anuncio presenta una foto duplicada en otro aviso con distinto precio y un desvío de precio bajo el promedio zonal, la fórmula arroja exactamente un veredicto de **`Anuncio sospechoso`** con un nivel de confianza en el entorno del **`82%`** y el motivo principal: *"Esta foto aparece en otro anuncio con un precio distinto"*, respetando literalmente la especificación del Entregable 3.
+> **Sobre el 82 % del Prototipo (Pantalla 6):** el prototipo de baja fidelidad del Entregable 3 muestra "Nivel de confianza: 82%" como **cifra de ejemplo de un mockup**, no como resultado de una fórmula. El caso prototipo implementado (foto duplicada + precio 45 % bajo + cuenta nueva + seña sin visita) suma un `riskScore` de 115, que se acota a 100, y da **89 %**. Se decidió (28/10/2026) **no retocar los coeficientes para clavar el 82 %**: el veredicto, el motivo principal (*"Esta foto aparece en otro anuncio con un precio distinto"*) y la recomendación sí coinciden con el prototipo; el número no.
+>
+> **Qué es y qué no es este porcentaje:** es un **índice del motor**, no una probabilidad calibrada de que el anuncio sea fraude (no se calibró contra casos reales independientes; ver docs/04). Además **se satura**: todo caso con `riskScore` ≥ 100 da el mismo 89 % (los 14 casos sospechosos del dataset curado dan exactamente 89 %), así que no distingue una alerta muy fuerte de una apenas por encima del umbral. La pantalla de resultado y el reporte lo aclaran. Mejora pendiente si hace falta discriminar: una fórmula que dependa de cuántas señales independientes coinciden (foto, precio, identidad, directorio) en vez de un puntaje acotado.

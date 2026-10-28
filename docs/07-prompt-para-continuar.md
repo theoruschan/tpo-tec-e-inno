@@ -53,8 +53,8 @@ Pendiente (en este orden, salvo que te diga otra cosa)
 4. Precio de habitaciones: hoy es una estimación del equipo. Opciones: API de MercadoLibre (requiere que
    registre una app en el DevCenter; credenciales solo como secretos) o calcular medianas con datos
    de la comunidad excluyendo anuncios marcados como sospechosos. Preguntame antes de elegir.
-5. Decisión pendiente: el caso prototipo da 89 % de confianza y el PDF 3 dice 82 %. Proponeme si
-   ajustar la fórmula o el texto de docs/03.
+5. (RESUELTO 28/10/2026) El 82 % del PDF 3 es ilustrativo; no se retocó la fórmula. docs/03 describe la
+   fórmula real (72-89 % para sospechoso, se satura) y la UI rotula la confianza como índice del motor.
 6. Soporte humano (Pantalla 7): hoy es demo y lo dice. Hace falta un canal real (lo defino yo).
 7. Legal antes de abrir el directorio al público: términos de uso, proceso de reclamo y baja,
    evaluación de Ley 25.326 / registro ante la AAIP. Armá un borrador en docs/ para que lo revisemos.

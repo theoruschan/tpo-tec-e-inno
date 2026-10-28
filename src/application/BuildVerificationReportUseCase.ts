@@ -3,7 +3,7 @@ import { PROPERTY_TYPE_LABELS } from './ResolvePriceBenchmark';
 
 /** Descargo del prototipo (Pantalla 2) que tiene que viajar en todo reporte. */
 export const REPORT_DISCLAIMER =
-  'La verificación no reemplaza ver la propiedad en persona. Es un chequeo automático preventivo: no firmes ni transfieras sin visitar el lugar o mandar a alguien de confianza.';
+  'La verificación no reemplaza ver la propiedad en persona. Es un chequeo automático preventivo: no firmes ni transfieras sin visitar el lugar o mandar a alguien de confianza. El nivel de confianza es un índice del motor, no una probabilidad.';
 
 export interface VerificationReport {
   id: string;

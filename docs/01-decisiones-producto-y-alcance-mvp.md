@@ -99,7 +99,7 @@ El software desarrollado en este repositorio implementa fielmente las **8 pantal
 - **Título:** *"Veredicto de la verificación."*
 - **Contenido principal:**
   - **Veredicto:** `Anuncio sospechoso` (Rojo) | `Verificado` (Verde) | `Sin datos suficientes` (Ámbar).
-  - **Nivel de confianza:** Porcentaje calculado por el motor (ej. `82%`).
+  - **Nivel de confianza:** Porcentaje calculado por el motor (el `82%` del prototipo es ilustrativo; la fórmula real y sus límites están en docs/03, sección 4).
   - **Motivo principal destacado:** Ej. *"Esta foto aparece en otro anuncio con un precio distinto"* o *"El CBU/Alias informado registra denuncias previas de estafa"*.
   - Acciones: Botón **"Ver detalles"** (va a Pantalla 7) y acceso directo a **"Ver reporte descargable"** (Pantalla 8).
 

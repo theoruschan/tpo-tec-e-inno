@@ -266,7 +266,7 @@ export interface QuickDemoScenario {
 export const QUICK_DEMO_SCENARIOS: QuickDemoScenario[] = [
   {
     id: 'demo-prototipo-82',
-    badge: 'Caso Prototipo (82% Sospechoso)',
+    badge: 'Caso Prototipo (Sospechoso)',
     title: 'Foto duplicada en otro anuncio + precio bajo',
     subtitle: 'Reproduce exactamente el caso de las Pantallas 6 y 7 del PDF de Design Thinking',
     input: {
