@@ -16,6 +16,7 @@ export type ScreenId =
   | 'view-directory'
   | 'view-experiment'
   | 'view-pilot'
+  | 'view-about'
   | 'view-admin';
 
 export type VerdictType = 'Anuncio sospechoso' | 'Verificado' | 'Sin datos suficientes';

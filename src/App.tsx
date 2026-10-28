@@ -49,6 +49,9 @@ const loadDetailsAndReport = () => import('./presentation/screens/Screen7Details
 const AdminView = lazy(() =>
   import('./presentation/screens/AdminView').then((m) => ({ default: m.AdminView }))
 );
+const AboutView = lazy(() =>
+  import('./presentation/screens/AboutView').then((m) => ({ default: m.AboutView }))
+);
 const PilotInfoView = lazy(() =>
   import('./presentation/screens/PilotInfoView').then((m) => ({ default: m.PilotInfoView }))
 );
@@ -322,6 +325,8 @@ export const App: React.FC = () => {
           />
         )}
 
+        {currentScreen === 'view-about' && <AboutView onNavigate={setCurrentScreen} />}
+
         {currentScreen === 'view-pilot' && (
           <PilotInfoView onStart={() => setCurrentScreen('screen-2-instructions')} />
         )}
@@ -390,6 +395,13 @@ export const App: React.FC = () => {
           </span>
           <span>
             Motor de Verificación Preventiva (Data Mining + BI + Directorio CBU) ·{' '}
+            <button
+              type="button"
+              onClick={() => setCurrentScreen('view-about')}
+              className="font-semibold underline underline-offset-2"
+            >
+              Sobre el proyecto
+            </button>{' · '}
             <button
               type="button"
               onClick={() => setCurrentScreen('view-pilot')}

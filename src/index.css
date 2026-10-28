@@ -1,18 +1,136 @@
 @import "tailwindcss";
+@import "@fontsource-variable/fraunces/wght.css";
+@import "@fontsource/ibm-plex-sans/latin-400.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+
+/*
+ * Sistema visual "sello / documento": papel cálido, tinta oscura y un único rojo de sello.
+ * En vez de reescribir cada pantalla, se redefinen las escalas `slate` (neutros) e `indigo`
+ * (color de marca) que ya usa toda la app: `slate` pasa a papel/tinta cálidos e `indigo`
+ * pasa a tinta, así los botones primarios quedan negros sobre crema.
+ * Los colores de veredicto (rojo / ámbar / verde) siguen siendo semánticos.
+ */
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces Variable", ui-serif, Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* Papel (fondos y bordes) y tinta (texto): contraste AA sobre --color-slate-50 */
+  --color-white: #fffdf8;
+  --color-slate-50: #f6f1e6;
+  --color-slate-100: #eee7d6;
+  --color-slate-200: #ded4bd;
+  --color-slate-300: #c9bda3;
+  --color-slate-400: #9b9078;
+  --color-slate-500: #6a604d;
+  --color-slate-600: #4f4737;
+  --color-slate-700: #3a3428;
+  --color-slate-800: #27221a;
+  --color-slate-900: #1a1610;
+  --color-slate-950: #0f0d09;
+
+  /* Marca = tinta */
+  --color-indigo-50: #f0e9d8;
+  --color-indigo-100: #e5dbc2;
+  --color-indigo-200: #d3c5a6;
+  --color-indigo-300: #b9a781;
+  --color-indigo-400: #8a7650;
+  --color-indigo-500: #54442b;
+  --color-indigo-600: #2a241b;
+  --color-indigo-700: #17130d;
+  --color-indigo-800: #0e0b07;
+  --color-indigo-900: #080604;
+  --color-indigo-950: #040302;
+
+  /* Rojo de sello y verde de aprobación, algo más apagados que los de fábrica */
+  --color-red-600: #b42318;
+  --color-red-700: #912018;
+  --color-emerald-600: #1f6b45;
+  --color-emerald-700: #17583a;
+
+  /* Esquinas más cuadradas (documento, no app de juguete) */
+  --radius-md: 0.25rem;
+  --radius-lg: 0.3125rem;
+  --radius-xl: 0.375rem;
+  --radius-2xl: 0.5rem;
+  --radius-3xl: 0.5rem;
+
+  /* Sombras casi planas: la jerarquía la dan los bordes */
+  --shadow-2xs: none;
+  --shadow-xs: 0 1px 0 rgb(26 22 16 / 0.05);
+  --shadow-sm: 0 1px 0 rgb(26 22 16 / 0.06);
+  --shadow-md: 0 2px 0 rgb(26 22 16 / 0.06);
+}
 
 @layer base {
   /* Modern Web Guidance: Validation styling only after user interaction (:user-invalid) */
   input:user-invalid,
   select:user-invalid,
   textarea:user-invalid {
-    border-color: #dc2626;
-    background-color: #fef2f2;
+    border-color: #b42318;
+    background-color: #fdf1ee;
   }
 
   /* Modern Web Guidance: Native dialog backdrop & modal styling without overriding closed display */
   dialog::backdrop {
-    background-color: rgba(15, 23, 42, 0.55);
-    backdrop-filter: blur(3px);
+    background-color: rgba(26, 22, 16, 0.6);
+    backdrop-filter: blur(2px);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    /* Grano de papel muy sutil (SVG embebido: la CSP permite img-src data:) */
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35  0 0 0 0 .28  0 0 0 0 .15  0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  ::selection {
+    background: #b42318;
+    color: #fffdf8;
+  }
+}
+
+/* Los títulos principales van en serif. Sin capa a propósito: tiene que ganarle a las
+   utilidades font-extrabold/font-black de las pantallas, que en Fraunces quedan demasiado pesadas. */
+h1 {
+  font-family: var(--font-serif);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  font-optical-sizing: auto;
+}
+
+/* Sello de veredicto (Pantalla 6): borde doble, leve rotación y tinta irregular */
+.stamp {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 0.35rem 1rem;
+  border: 3px solid currentColor;
+  border-radius: 0.375rem;
+  outline: 1px solid currentColor;
+  outline-offset: 3px;
+  transform: rotate(-3deg);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  line-height: 1.1;
+  mix-blend-mode: multiply;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stamp-in {
+    animation: stamp-in 420ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  }
+  @keyframes stamp-in {
+    from {
+      transform: rotate(-8deg) scale(1.18);
+      opacity: 0;
+    }
+    to {
+      transform: rotate(-3deg) scale(1);
+      opacity: 1;
+    }
   }
 }
 
@@ -24,12 +142,13 @@
 
   body {
     background: #ffffff !important;
-    color: #0f172a !important;
+    background-image: none !important;
+    color: #1a1610 !important;
   }
 
   .print-container {
     box-shadow: none !important;
-    border: 1px solid #cbd5e1 !important;
+    border: 1px solid #c9bda3 !important;
     margin: 0 !important;
     padding: 1.5rem !important;
     max-width: 100% !important;

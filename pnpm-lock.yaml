@@ -8,6 +8,15 @@ importers:
 
   .:
     dependencies:
+      '@fontsource-variable/fraunces':
+        specifier: 5.1.1
+        version: 5.1.1
+      '@fontsource/ibm-plex-mono':
+        specifier: 5.1.1
+        version: 5.1.1
+      '@fontsource/ibm-plex-sans':
+        specifier: 5.1.1
+        version: 5.1.1
       jspdf:
         specifier: 2.5.2
         version: 2.5.2
@@ -395,6 +404,15 @@ packages:
   '@eslint/plugin-kit@0.2.8':
     resolution: {integrity: sha512-ZAoA40rNMPwSm+AeHpCq8STiNAwzWLJuP8Xv4CHIc9wv/PSuExjMrmjfYNj682vW0OOiZ1HKxzvjQr9XZIisQA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@fontsource-variable/fraunces@5.1.1':
+    resolution: {integrity: sha512-E7q6ygfRzxM3ElVCyDaiMnX1S2LA5WZYClMZ2aZwhz+qNd6x1yzG4Y70fh1ExQcC9wOKduN1EWLeLG/9aC263Q==}
+
+  '@fontsource/ibm-plex-mono@5.1.1':
+    resolution: {integrity: sha512-1aayqPe/ZkD3MlvqpmOHecfA3f2B8g+fAEkgvcCd3lkPP0pS1T0xG5Zmn2EsJQqr1JURtugPUH+5NqvKyfFZMQ==}
+
+  '@fontsource/ibm-plex-sans@5.1.1':
+    resolution: {integrity: sha512-s6xHuHCYxZbIZV0Qchw+EoucPYWCP3PgLs9+oF3u1kLQKwabWaUC3Fm30y6n3VIMCqR89dpkcS8LTqH/IGTDDQ==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2174,6 +2192,12 @@ snapshots:
     dependencies:
       '@eslint/core': 0.13.0
       levn: 0.4.1
+
+  '@fontsource-variable/fraunces@5.1.1': {}
+
+  '@fontsource/ibm-plex-mono@5.1.1': {}
+
+  '@fontsource/ibm-plex-sans@5.1.1': {}
 
   '@humanfs/core@0.19.2':
     dependencies:

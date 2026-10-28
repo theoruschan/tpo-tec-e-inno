@@ -54,7 +54,7 @@ export class JsPdfReportExporter implements ReportPdfExporter {
     let y = MARGIN;
 
     // Encabezado
-    doc.setFillColor(79, 70, 229);
+    doc.setFillColor(26, 22, 16);
     doc.rect(0, 0, PAGE_WIDTH, 24, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');

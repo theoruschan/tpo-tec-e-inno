@@ -50,3 +50,5 @@ Todas las decisiones de producto, experiencia de usuario, arquitectura de softwa
    Estado actual, cosas ya resueltas y lista priorizada de pendientes, lista para pegar en una sesión nueva.
 8. **[08-piloto-y-panel-admin.md](./08-piloto-y-panel-admin.md)**  
    Piloto cerrado (aviso, condiciones, feedback) y panel de administración protegido en el servidor, con la guía para crear el usuario admin.
+9. **[09-diseno-visual.md](./09-diseno-visual.md)**  
+   Sistema visual "sello / documento": paleta, tipografías, el veredicto como sello, cómo está hecho y límites.

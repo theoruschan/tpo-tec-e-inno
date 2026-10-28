@@ -107,6 +107,7 @@ docs/                           # ADRs y entregables
 - [docs/05](./docs/05-buenas-practicas-calidad-y-seguridad.md) — Calidad, seguridad y accesibilidad
 - [docs/06](./docs/06-directorio-colaborativo-supabase.md) — Directorio colaborativo en Supabase
 - [docs/08](./docs/08-piloto-y-panel-admin.md) — Piloto cerrado y panel de administración
+- [docs/09](./docs/09-diseno-visual.md) — Sistema visual "sello / documento"
 
 Entregables originales:
 
