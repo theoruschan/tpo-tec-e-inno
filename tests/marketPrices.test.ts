@@ -110,6 +110,11 @@ describe('VerifyListingUseCase con precios de mercado', () => {
     const studio = verifier.execute({ ...base, monthlyRentArs: 500000 }, deps);
     expect(room.priceComparison.isTooGoodToBeTrue).toBe(false);
     expect(studio.priceComparison.isTooGoodToBeTrue).toBe(true); // 36% debajo del índice
+    // El índice es de toda la ciudad: el motivo no puede decir "promedio de Palermo".
+    expect(studio.findings.find((f) => f.id === 'bi-price-too-good')?.title).toBe(
+      'Precio 35.9% por debajo del promedio de CABA'
+    );
+    expect(room.findings.find((f) => f.id === 'bi-price-consistent')?.title).toContain('Palermo');
   });
 
   it('sin índice: no compara el precio, no suma riesgo y lo explica', () => {

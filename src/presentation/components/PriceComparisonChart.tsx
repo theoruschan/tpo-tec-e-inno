@@ -18,6 +18,19 @@ export const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({
     isTooGoodToBeTrue,
   } = comparison;
 
+  if (zone.averageRentArs <= 0) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700">
+        <h4 className="text-sm font-bold text-slate-900">Precio del anuncio vs. precio de referencia</h4>
+        <p className="mt-1">
+          {zone.priceSource?.label ?? 'No hay precio de referencia para este alquiler'}. Precio
+          publicado: <strong>${publishedRentArs.toLocaleString('es-AR')}/mes</strong> · Seña: $
+          {depositRequestedArs.toLocaleString('es-AR')} ({depositToRentRatioPercent}% del mes).
+        </p>
+      </div>
+    );
+  }
+
   const maxScale = Math.max(
     zone.maxReasonableArs * 1.15,
     publishedRentArs * 1.15
@@ -81,7 +94,7 @@ export const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({
         <div>
           <div className="mb-1 flex justify-between font-medium">
             <span className="text-slate-700">
-              Promedio histórico estudiantil ({zone.neighborhood})
+              Precio de referencia
             </span>
             <span className="font-bold text-slate-900">
               ${zone.averageRentArs.toLocaleString('es-AR')} / mes
@@ -96,9 +109,29 @@ export const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({
         </div>
       </div>
 
+      {zone.priceSource && (
+        <p className="mt-3 text-[11px] text-slate-600">
+          Fuente: {zone.priceSource.label}
+          {zone.priceSource.url && (
+            <>
+              {' · '}
+              <a
+                href={zone.priceSource.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-indigo-700 underline"
+              >
+                ver reporte
+              </a>
+            </>
+          )}
+          {zone.priceSource.note && <span className="block text-amber-900">{zone.priceSource.note}</span>}
+        </p>
+      )}
+
       <div className="mt-3 grid grid-cols-1 gap-2 border-t border-slate-200 pt-3 text-xs sm:grid-cols-3">
         <div>
-          <span className="text-slate-500">Banda normal de mercado:</span>
+          <span className="text-slate-500">Banda normal (±25%, estimada):</span>
           <p className="font-semibold text-slate-800">
             ${zone.minReasonableArs.toLocaleString('es-AR')} – $
             {zone.maxReasonableArs.toLocaleString('es-AR')}

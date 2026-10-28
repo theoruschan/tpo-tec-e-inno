@@ -22,6 +22,9 @@ export class ZonePriceBiService {
   ): ZonePriceBiAnalysis {
     const publishedRent = Math.max(1, input.monthlyRentArs);
     const deposit = Math.max(0, input.depositRequestedArs);
+    // Un índice de mercado es el promedio de la ciudad; la estimación del equipo es por barrio.
+    const referenceArea =
+      zone.priceSource?.kind === 'market-index' ? zone.city : zone.neighborhood;
     const sourceDetail = zone.priceSource
       ? ` · Referencia: ${zone.priceSource.label}${zone.priceSource.note ? `. ${zone.priceSource.note}` : ''}`
       : '';
@@ -79,18 +82,18 @@ export class ZonePriceBiService {
         id: 'bi-price-too-good',
         category: 'zone_price_bi',
         severity: 'critical',
-        title: `Precio ${Math.abs(deviationPercent)}% por debajo del promedio de ${zone.neighborhood}`,
-        description: `El alquiler publicado ($${publishedRent.toLocaleString('es-AR')}/mes) está muy por debajo del precio de referencia para ${zone.neighborhood}, ${zone.city} ($${zone.averageRentArs.toLocaleString('es-AR')}/mes). Las ofertas "demasiado buenas para ser reales" son el principal anzuelo para pedir señas rápidas.`,
+        title: `Precio ${Math.abs(deviationPercent)}% por debajo del promedio de ${referenceArea}`,
+        description: `El alquiler publicado ($${publishedRent.toLocaleString('es-AR')}/mes) está muy por debajo del precio de referencia para ${referenceArea} ($${zone.averageRentArs.toLocaleString('es-AR')}/mes). Las ofertas "demasiado buenas para ser reales" son el principal anzuelo para pedir señas rápidas.`,
         riskPoints: 34,
-        evidenceDetail: `Z-Score zonal: ${zScore}σ · Banda razonable en ${zone.neighborhood}: $${zone.minReasonableArs.toLocaleString('es-AR')} – $${zone.maxReasonableArs.toLocaleString('es-AR')}${sourceDetail}`,
+        evidenceDetail: `Z-Score zonal: ${zScore}σ · Banda razonable en ${referenceArea}: $${zone.minReasonableArs.toLocaleString('es-AR')} – $${zone.maxReasonableArs.toLocaleString('es-AR')}${sourceDetail}`,
       });
     } else if (isModeratelyLow) {
       findings.push({
         id: 'bi-price-moderately-low',
         category: 'zone_price_bi',
         severity: 'warning',
-        title: `Precio ${Math.abs(deviationPercent)}% inferior a la media de ${zone.neighborhood}`,
-        description: `El valor mensual ($${publishedRent.toLocaleString('es-AR')}) se ubica por debajo del rango habitual de ${zone.neighborhood} ($${zone.averageRentArs.toLocaleString('es-AR')}). Conviene extremar la validación de identidad antes de señar.`,
+        title: `Precio ${Math.abs(deviationPercent)}% inferior a la media de ${referenceArea}`,
+        description: `El valor mensual ($${publishedRent.toLocaleString('es-AR')}) se ubica por debajo del rango habitual de ${referenceArea} ($${zone.averageRentArs.toLocaleString('es-AR')}). Conviene extremar la validación de identidad antes de señar.`,
         riskPoints: 16,
         evidenceDetail: `Z-Score zonal: ${zScore}σ${sourceDetail}`,
       });
@@ -99,8 +102,8 @@ export class ZonePriceBiService {
         id: 'bi-price-consistent',
         category: 'zone_price_bi',
         severity: 'positive',
-        title: `Precio alineado con el promedio de mercado en ${zone.neighborhood}`,
-        description: `El monto publicado ($${publishedRent.toLocaleString('es-AR')}/mes) presenta una variación de ${deviationPercent > 0 ? `+${deviationPercent}` : deviationPercent}% respecto al promedio de ${zone.neighborhood} ($${zone.averageRentArs.toLocaleString('es-AR')}/mes), dentro de parámetros normales.`,
+        title: `Precio alineado con el promedio de mercado en ${referenceArea}`,
+        description: `El monto publicado ($${publishedRent.toLocaleString('es-AR')}/mes) presenta una variación de ${deviationPercent > 0 ? `+${deviationPercent}` : deviationPercent}% respecto al promedio de ${referenceArea} ($${zone.averageRentArs.toLocaleString('es-AR')}/mes), dentro de parámetros normales.`,
         riskPoints: 0,
         evidenceDetail: `Z-Score zonal: ${zScore}σ · Polo universitario: ${zone.universityHub}${sourceDetail}`,
       });

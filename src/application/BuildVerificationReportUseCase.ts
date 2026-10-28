@@ -1,4 +1,5 @@
 import { VerificationResult } from '../domain/entities/types';
+import { PROPERTY_TYPE_LABELS } from './ResolvePriceBenchmark';
 
 /** Descargo del prototipo (Pantalla 2) que tiene que viajar en todo reporte. */
 export const REPORT_DISCLAIMER =
@@ -40,7 +41,7 @@ export class BuildVerificationReportUseCase {
       listing: input.captureFileName
         ? `${input.listingUrlOrCapture} (captura: ${input.captureFileName})`
         : input.listingUrlOrCapture,
-      zone: `${priceComparison.zone.neighborhood} (${priceComparison.zone.city})`,
+      zone: `${priceComparison.zone.neighborhood} (${priceComparison.zone.city}) · ${PROPERTY_TYPE_LABELS[input.propertyType ?? 'room']}`,
       rentAndDeposit: `Alquiler ${ARS(input.monthlyRentArs)}/mes · Seña pedida ${ARS(input.depositRequestedArs)}`,
       verdict: result.verdict,
       confidenceLevel: result.confidenceLevel,

@@ -14,8 +14,13 @@ import {
   Undo2,
 } from 'lucide-react';
 import {
+  PROPERTY_TYPE_LABELS,
+  resolvePriceBenchmark,
+} from '../../application/ResolvePriceBenchmark';
+import {
   DataQualityCheckResult,
   ListingInput,
+  PropertyType,
 } from '../../domain/entities/types';
 import { ImageHasher } from '../../domain/ports/ImageHasher';
 import { ImageTextReader } from '../../domain/ports/ImageTextReader';
@@ -34,6 +39,7 @@ import {
   UNIVERSITY_ZONES,
   ZONE_KEYWORDS,
 } from '../../infrastructure/data/datasets';
+import { MARKET_PRICES } from '../../infrastructure/data/marketPrices';
 
 interface Screen3InputProps {
   input: ListingInput;
@@ -164,6 +170,10 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
       });
     }
   };
+
+  const propertyType: PropertyType = input.propertyType ?? 'room';
+  const selectedZone = UNIVERSITY_ZONES.find((z) => z.id === input.zoneId) ?? UNIVERSITY_ZONES[0];
+  const reference = resolvePriceBenchmark(selectedZone, propertyType, MARKET_PRICES);
 
   const extractedRows = ocr.status === 'done' || ocr.status === 'applied' ? describeExtracted(ocr.data) : [];
 
@@ -414,6 +424,29 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
           </p>
         </div>
 
+        {/* Tipo de alojamiento: define contra qué precio de referencia se compara */}
+        <div>
+          <label htmlFor="property-type" className="block text-xs font-bold text-slate-800">
+            Tipo de alojamiento *
+          </label>
+          <span id="property-type-hint" className="mb-1 block text-xs text-slate-500">
+            Una habitación y un departamento entero no se comparan contra el mismo precio
+          </span>
+          <select
+            id="property-type"
+            value={propertyType}
+            onChange={(e) => onChange({ ...input, propertyType: e.target.value as PropertyType })}
+            aria-describedby="property-type-hint"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-600 focus:outline-none sm:w-auto"
+          >
+            {(Object.keys(PROPERTY_TYPE_LABELS) as PropertyType[]).map((type) => (
+              <option key={type} value={type}>
+                {PROPERTY_TYPE_LABELS[type]}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Ciudad / Zona y Montos */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
@@ -427,7 +460,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
               id="zone-select-hint"
               className="mb-1 block text-xs text-slate-500"
             >
-              Para comparar contra el promedio BI zonal
+              Para comparar contra el precio de referencia
             </span>
             <select
               id="zone-select"
@@ -436,12 +469,18 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
               aria-describedby="zone-select-hint"
               className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-600 focus:outline-none"
             >
-              {UNIVERSITY_ZONES.map((z) => (
-                <option key={z.id} value={z.id}>
-                  {z.city} — {z.neighborhood} (Prom: $
-                  {(z.averageRentArs / 1000).toFixed(0)}k)
-                </option>
-              ))}
+              {UNIVERSITY_ZONES.map((z) => {
+                const ref = resolvePriceBenchmark(z, propertyType, MARKET_PRICES);
+                return (
+                  <option key={z.id} value={z.id}>
+                    {z.city} — {z.neighborhood} (
+                    {ref.averageRentArs > 0
+                      ? `Ref: $${(ref.averageRentArs / 1000).toFixed(0)}k`
+                      : 'sin índice'}
+                    )
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -507,6 +546,39 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
             />
           </div>
         </div>
+
+        <p
+          className="-mt-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-700"
+          data-testid="price-reference"
+        >
+          {reference.averageRentArs > 0 ? (
+            <>
+              Precio de referencia: <strong>${reference.averageRentArs.toLocaleString('es-AR')}/mes</strong>{' '}
+              · {reference.priceSource?.label}
+              {reference.priceSource?.url && (
+                <>
+                  {' '}
+                  <a
+                    href={reference.priceSource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-indigo-700 underline"
+                  >
+                    ver reporte
+                  </a>
+                </>
+              )}
+              {reference.priceSource?.note && (
+                <span className="mt-0.5 block text-amber-900">{reference.priceSource.note}</span>
+              )}
+            </>
+          ) : (
+            <>
+              {reference.priceSource?.label}. El precio no se va a comparar; el resto de los
+              chequeos sí.
+            </>
+          )}
+        </p>
 
         {/* Datos de contacto e identidad del propietario y CBU/Alias */}
         <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-4">
