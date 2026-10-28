@@ -1,6 +1,6 @@
 # 08 — Piloto cerrado y panel de administración (ADR-008)
 
-**Estado:** Implementado (28/10/2026) · Falta crear el usuario admin (paso manual, abajo)
+**Estado:** Implementado (28/10/2026) · Usuario admin creado y habilitado en `private.admins` el 28/10/2026 · Login con el usuario real todavía sin probar en producción
 
 ---
 
@@ -34,6 +34,8 @@ Migración [`20261028120000_pilot_admin.sql`](../supabase/migrations/20261028120
 **Verificado (28/10/2026):** con la clave pública, las 4 funciones admin devuelven *permission denied* (401) y la tabla no se puede leer; un usuario autenticado que no es admin y un usuario sin sesión reciben `42501`; el admin (emulado con claims en una transacción que se revierte) lista, modera una sola vez por reporte y ve el feedback. En la app, el login contra el endpoint real de Supabase Auth con credenciales falsas muestra *"Email o contraseña incorrectos"*. **No se probó el login con un usuario admin real** (todavía no existe): hacelo apenas lo crees.
 
 ## Cómo crear el usuario admin (una vez)
+
+> **Importante:** la contraseña del admin tiene que ser larga y única (12+ caracteres). El panel está en una URL pública: con una contraseña corta o típica, cualquiera que adivine el email podría aprobar reportes falsos (que se publican en el directorio) y leer el feedback. Cambiala antes de compartir el link del piloto.
 
 1. Entrá a https://supabase.com/dashboard → proyecto **tpo-tec e inno** → **Authentication → Users → Add user → Create new user**.
 2. Poné tu email y una **contraseña que solo sepas vos** (no se la pases a nadie, ni a Claude). Marcá *Auto Confirm User*.
