@@ -45,7 +45,7 @@ describe('resolvePriceBenchmark', () => {
     expect(zone.maxReasonableArs).toBe(975000);
     expect(zone.priceSource).toMatchObject({ kind: 'market-index', url: 'https://x/caba.pdf' });
     expect(zone.priceSource?.label).toBe(
-      'Índice CABA, monoambiente, septiembre 2026 (promedio de la ciudad, no del barrio)'
+      'Índice CABA, monoambiente, septiembre 2026 (promedio de la ciudad o región, no del barrio)'
     );
     expect(zone.priceSource?.note).toBeUndefined();
   });

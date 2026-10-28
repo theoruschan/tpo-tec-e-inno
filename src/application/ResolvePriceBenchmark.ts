@@ -77,7 +77,7 @@ export function resolvePriceBenchmark(
     maxReasonableArs: Math.round(price * (1 + REASONABLE_BAND)),
     priceSource: {
       kind: 'market-index',
-      label: `${source.label}, ${typeLabel}, ${formatPeriod(source.period)} (promedio de la ciudad, no del barrio)`,
+      label: `${source.label}, ${typeLabel}, ${formatPeriod(source.period)} (promedio de la ciudad o región, no del barrio)`,
       url: source.url,
       note:
         age >= STALE_AFTER_MONTHS
