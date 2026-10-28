@@ -1,0 +1,31 @@
+name: Mantener Supabase activo
+
+# El plan gratis de Supabase pausa el proyecto tras ~7 días sin actividad, y con el proyecto
+# pausado el directorio y el índice de fotos dejan de ser compartidos. Esta Action hace una
+# consulta liviana lunes y jueves. Si falla (por ejemplo, el proyecto ya está pausado), GitHub
+# avisa por mail al dueño del repo. No hay garantía oficial de que una consulta evite la pausa:
+# si el piloto queda parado un tiempo largo, conviene entrar al dashboard de Supabase.
+on:
+  schedule:
+    - cron: '0 12 * * 1,4'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar el directorio público
+        env:
+          # Clave publishable (pública por diseño; ya viaja en el JS del sitio).
+          SUPABASE_URL: https://pakcqhhecnlgkzznlytu.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_ZbKUwEVk2os_84i7NzYcqA_DaST4ts_
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/get_public_fraud_directory" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_PUBLISHABLE_KEY" \
+            -H 'Content-Type: application/json' -d '{}')
+          echo "Supabase respondió HTTP $code"
+          test "$code" = "200"
