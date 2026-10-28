@@ -28,7 +28,10 @@ import { BrowserImageHasher } from './infrastructure/image/BrowserImageHasher';
 import { TesseractImageTextReader } from './infrastructure/ocr/TesseractImageTextReader';
 import { JsPdfReportExporter } from './infrastructure/report/JsPdfReportExporter';
 import { LocalRepository } from './infrastructure/storage/LocalRepository';
-import { createPilotFeedbackRepository } from './infrastructure/createPilotRepositories';
+import {
+  createAdminRepository,
+  createPilotFeedbackRepository,
+} from './infrastructure/createPilotRepositories';
 import { Navbar } from './presentation/components/Navbar';
 import { PilotBanner } from './presentation/components/PilotBanner';
 import {
@@ -42,6 +45,10 @@ const loadInputAndQuality = () => import('./presentation/screens/Screen3InputAnd
 const loadProcessingAndResult = () => import('./presentation/screens/Screen5ProcessingAnd6Result');
 const loadDetailsAndReport = () => import('./presentation/screens/Screen7DetailsAnd8Report');
 
+// El panel admin va en su propio chunk: los participantes del piloto nunca lo descargan.
+const AdminView = lazy(() =>
+  import('./presentation/screens/AdminView').then((m) => ({ default: m.AdminView }))
+);
 const PilotInfoView = lazy(() =>
   import('./presentation/screens/PilotInfoView').then((m) => ({ default: m.PilotInfoView }))
 );
@@ -76,6 +83,7 @@ const qualityValidator = new DataQualityValidator();
 const fraudRepository = createFraudDirectoryRepository(import.meta.env);
 const photoSightingRepository = createPhotoSightingRepository(import.meta.env);
 const pilotFeedbackRepository = createPilotFeedbackRepository(import.meta.env);
+const adminRepository = createAdminRepository(import.meta.env);
 const benchmarkUseCase = new RunExperimentBenchmarkUseCase();
 const imageHasher = new BrowserImageHasher();
 const pdfExporter = new JsPdfReportExporter();
@@ -102,6 +110,16 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     void refreshDirectory();
+  }, []);
+
+  // /#admin abre el panel de administración (sin link en la app; la protección real es el servidor).
+  useEffect(() => {
+    const syncAdminRoute = () => {
+      if (window.location.hash === '#admin') setCurrentScreen('view-admin');
+    };
+    syncAdminRoute();
+    window.addEventListener('hashchange', syncAdminRoute);
+    return () => window.removeEventListener('hashchange', syncAdminRoute);
   }, []);
 
   // La verificación es asíncrona (hash del CBU/teléfono en el servidor); la Pantalla 5
@@ -291,6 +309,16 @@ export const App: React.FC = () => {
             onViewReport={() => setCurrentScreen('screen-8-report')}
             onNewVerification={() => setCurrentScreen('screen-3-input')}
             feedbackRepository={pilotFeedbackRepository}
+          />
+        )}
+
+        {currentScreen === 'view-admin' && (
+          <AdminView
+            repository={adminRepository}
+            onExit={() => {
+              window.history.replaceState(null, '', window.location.pathname + window.location.search);
+              setCurrentScreen('screen-1-home');
+            }}
           />
         )}
 

@@ -48,3 +48,5 @@ Todas las decisiones de producto, experiencia de usuario, arquitectura de softwa
    Directorio colaborativo compartido en Supabase: hash con sal secreta, enmascarado, moderación, regla de 3 reportes independientes y fallback offline.
 7. **[07-prompt-para-continuar.md](./07-prompt-para-continuar.md)**  
    Estado actual, cosas ya resueltas y lista priorizada de pendientes, lista para pegar en una sesión nueva.
+8. **[08-piloto-y-panel-admin.md](./08-piloto-y-panel-admin.md)**  
+   Piloto cerrado (aviso, condiciones, feedback) y panel de administración protegido en el servidor, con la guía para crear el usuario admin.

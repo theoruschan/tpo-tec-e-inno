@@ -6,7 +6,10 @@ interface PilotBannerProps {
 
 /** Aviso fijo del piloto: una ayuda para detectar señales de estafa, no una garantía. */
 export const PilotBanner: React.FC<PilotBannerProps> = ({ onOpenInfo }) => (
-  <div role="note" className="no-print border-b border-amber-200 bg-amber-50 text-xs text-amber-950">
+  <aside
+    aria-label="Aviso de versión piloto"
+    className="no-print border-b border-amber-200 bg-amber-50 text-xs text-amber-950"
+  >
     <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2">
       <p>
         <strong>Versión piloto.</strong> Es una ayuda para detectar señales de estafa, no una
@@ -21,5 +24,5 @@ export const PilotBanner: React.FC<PilotBannerProps> = ({ onOpenInfo }) => (
         Condiciones del piloto
       </button>
     </div>
-  </div>
+  </aside>
 );

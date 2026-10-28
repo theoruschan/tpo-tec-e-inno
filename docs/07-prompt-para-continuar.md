@@ -17,7 +17,7 @@ alquiler para estudiantes antes de pagar la seña. Ya está desplegada y funcion
 Antes de tocar código
 1. Leé README.md (tabla "Qué es real y qué no"), docs/03, docs/04, docs/06 y este archivo.
 2. Corré: corepack pnpm@10.15.0 install && corepack pnpm@10.15.0 lint && corepack pnpm@10.15.0 typecheck
-   && corepack pnpm@10.15.0 test && corepack pnpm@10.15.0 build. Línea base: 143 tests, build OK.
+   && corepack pnpm@10.15.0 test && corepack pnpm@10.15.0 build. Línea base: 181 tests, build OK.
    (No hay pnpm global; pnpm 12 rechaza el lockfile, por eso pnpm 10.15.0 vía corepack.)
 3. Si algo no está claro, preguntame. No asumas.
 
@@ -47,17 +47,19 @@ Pendiente (en este orden, salvo que te diga otra cosa)
 1. Correr una vez la Action "Actualizar precios de mercado" (workflow_dispatch) y revisar el resultado.
 2. OCR con capturas reales: te paso capturas de WhatsApp/Marketplace (con datos tapados); medí qué
    campos lee bien y ajustá ListingTextExtractor con tests nuevos por cada caso real.
-3. Anti-abuso y moderación: login con mail (Supabase Auth, magic link) para reportar y registrar fotos,
-   rate limit por IP (Edge Function), y un panel mínimo de moderación (aprobar/rechazar reportes y
-   revisar alertas de fotos con pocas fuentes) protegido por rol.
+3. (PARCIAL 28/10/2026) Piloto y panel admin hechos (docs/08): aviso, condiciones, feedback y moderación
+   de reportes en /#admin. Falta: que yo cree el usuario admin (guía en docs/08), login para reportar y
+   registrar fotos, rate limit por IP (Edge Function), revisar alertas de fotos con pocas fuentes y dar de
+   baja reportes ya aprobados desde el panel (hoy es por SQL).
 4. Precio de habitaciones: hoy es una estimación del equipo. Opciones: API de MercadoLibre (requiere que
    registre una app en el DevCenter; credenciales solo como secretos) o calcular medianas con datos
    de la comunidad excluyendo anuncios marcados como sospechosos. Preguntame antes de elegir.
 5. (RESUELTO 28/10/2026) El 82 % del PDF 3 es ilustrativo; no se retocó la fórmula. docs/03 describe la
    fórmula real (72-89 % para sospechoso, se satura) y la UI rotula la confianza como índice del motor.
 6. Soporte humano (Pantalla 7): hoy es demo y lo dice. Hace falta un canal real (lo defino yo).
-7. Legal antes de abrir el directorio al público: términos de uso, proceso de reclamo y baja,
-   evaluación de Ley 25.326 / registro ante la AAIP. Armá un borrador en docs/ para que lo revisemos.
+7. Legal antes de abrir el directorio al público: las condiciones del piloto (PilotInfoView) son un
+   borrador en lenguaje llano, no asesoramiento legal. Falta revisión profesional, proceso de reclamo
+   formal y evaluación de Ley 25.326 / registro ante la AAIP.
 8. Operación: Supabase free pausa el proyecto tras 7 días sin uso (proponé un ping o el plan pago);
    monitoreo de errores (por ejemplo Sentry) y métricas de uso sin datos personales.
 9. Re-medir Lighthouse móvil en producción después del OCR y los precios (antes: 99-100 en todo).

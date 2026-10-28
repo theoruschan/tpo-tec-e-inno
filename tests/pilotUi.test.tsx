@@ -33,9 +33,9 @@ describe('PilotBanner', () => {
   it('avisa que es un piloto, que no es una garantía y que no reemplaza ver la propiedad', async () => {
     const onOpen = vi.fn();
     render(<PilotBanner onOpenInfo={onOpen} />);
-    expect(screen.getByRole('note').textContent).toContain('Versión piloto');
-    expect(screen.getByRole('note').textContent).toContain('no significa que el anuncio sea seguro');
-    expect(screen.getByRole('note').textContent).toContain('No reemplaza ver la propiedad en persona');
+    expect(screen.getByRole('complementary', { name: 'Aviso de versión piloto' }).textContent).toContain('Versión piloto');
+    expect(screen.getByRole('complementary', { name: 'Aviso de versión piloto' }).textContent).toContain('no significa que el anuncio sea seguro');
+    expect(screen.getByRole('complementary', { name: 'Aviso de versión piloto' }).textContent).toContain('No reemplaza ver la propiedad en persona');
     await userEvent.click(screen.getByRole('button', { name: 'Condiciones del piloto' }));
     expect(onOpen).toHaveBeenCalledOnce();
   });
