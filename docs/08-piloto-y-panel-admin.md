@@ -1,6 +1,6 @@
 # 08 — Piloto cerrado y panel de administración (ADR-008)
 
-**Estado:** Implementado (28/10/2026) · Usuario admin creado y habilitado en `private.admins` el 28/10/2026 · Login con el usuario real todavía sin probar en producción
+**Estado:** Implementado (28/10/2026) · Usuario admin creado y habilitado en `private.admins` el 28/10/2026 · Login con el usuario real probado en producción el 28/10/2026 (el panel carga con sesión, 0 reportes y 0 feedback)
 
 ---
 
@@ -31,7 +31,7 @@ Migración [`20261028120000_pilot_admin.sql`](../supabase/migrations/20261028120
 - El feedback se escribe solo por `submit_pilot_feedback` (anon): valida los valores, un feedback por dispositivo y resultado (editable) y tope de 20 nuevos por hora. La tabla `pilot_feedback` tiene RLS sin políticas: nadie la lee ni escribe directo, solo el panel admin por las funciones.
 - No se guarda IP, nombre ni email de los participantes; el dispositivo se guarda como HMAC con la sal secreta. **Los comentarios son texto libre**: la UI pide no poner datos personales, pero no se puede garantizar.
 
-**Verificado (28/10/2026):** con la clave pública, las 4 funciones admin devuelven *permission denied* (401) y la tabla no se puede leer; un usuario autenticado que no es admin y un usuario sin sesión reciben `42501`; el admin (emulado con claims en una transacción que se revierte) lista, modera una sola vez por reporte y ve el feedback. En la app, el login contra el endpoint real de Supabase Auth con credenciales falsas muestra *"Email o contraseña incorrectos"*. **No se probó el login con un usuario admin real** (todavía no existe): hacelo apenas lo crees.
+**Verificado (28/10/2026):** con la clave pública, las 4 funciones admin devuelven *permission denied* (401) y la tabla no se puede leer; un usuario autenticado que no es admin y un usuario sin sesión reciben `42501`; el admin (emulado con claims en una transacción que se revierte) lista, modera una sola vez por reporte y ve el feedback. En la app, el login contra el endpoint real de Supabase Auth con credenciales falsas muestra *"Email o contraseña incorrectos"*. **Login con el usuario admin real:** probado por el equipo en producción el 28/10/2026 (captura: panel con sesión iniciada y las tres pestañas).
 
 ## Cómo crear el usuario admin (una vez)
 

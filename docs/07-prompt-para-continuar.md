@@ -48,7 +48,7 @@ Pendiente (en este orden, salvo que te diga otra cosa)
 2. OCR con capturas reales: te paso capturas de WhatsApp/Marketplace (con datos tapados); medí qué
    campos lee bien y ajustá ListingTextExtractor con tests nuevos por cada caso real.
 3. (PARCIAL 28/10/2026) Piloto y panel admin hechos (docs/08): aviso, condiciones, feedback y moderación
-   de reportes en /#admin. El usuario admin ya existe y está habilitado (no se probó el login real aún; la contraseña hay que cambiarla por una fuerte antes de compartir el link). Falta: login para reportar y
+   de reportes en /#admin. El usuario admin ya existe y está habilitado (login real probado en producción el 28/10/2026; la contraseña hay que cambiarla por una fuerte antes de compartir el link). Falta: login para reportar y
    registrar fotos, rate limit por IP (Edge Function), revisar alertas de fotos con pocas fuentes y dar de
    baja reportes ya aprobados desde el panel (hoy es por SQL).
 4. Precio de habitaciones: hoy es una estimación del equipo. Opciones: API de MercadoLibre (requiere que
