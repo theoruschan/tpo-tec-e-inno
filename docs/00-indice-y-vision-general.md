@@ -46,3 +46,5 @@ Todas las decisiones de producto, experiencia de usuario, arquitectura de softwa
    Estándares de ingeniería aplicados: Clean Code, principios SOLID, tipado estricto, privacidad de datos ("solo información pública"), accesibilidad web (WCAG) y estrategia de testing automatizado.
 6. **[06-directorio-colaborativo-supabase.md](./06-directorio-colaborativo-supabase.md)**  
    Directorio colaborativo compartido en Supabase: hash con sal secreta, enmascarado, moderación, regla de 3 reportes independientes y fallback offline.
+7. **[07-prompt-para-continuar.md](./07-prompt-para-continuar.md)**  
+   Estado actual, cosas ya resueltas y lista priorizada de pendientes, lista para pegar en una sesión nueva.
