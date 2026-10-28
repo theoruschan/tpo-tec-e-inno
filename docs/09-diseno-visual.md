@@ -28,3 +28,7 @@ Todo el tema vive en [`src/index.css`](../src/index.css), en un bloque `@theme` 
 - El rediseño específico llegó a la portada, la barra superior y el resultado; el resto de las pantallas (formulario, detalles, reporte, directorio, laboratorio, historial) heredan el tema por las escalas de color, los radios y las sombras, pero conservan su estructura anterior. Son candidatas a un segundo pase.
 - La animación del sello no se pudo ver "en vivo" en las pruebas automatizadas (la pestaña de prueba pausa las animaciones en segundo plano): se verificó su estado inicial y final y que no genera desborde, no el movimiento.
 - El PDF descargable (jsPDF) usa solo el encabezado en tinta; su maquetación sigue siendo la de la Fase 4 (Helvetica, sin Fraunces).
+
+## Medición en producción (28/10/2026, tras el rediseño)
+
+Lighthouse 12.2.1, perfil móvil, 3 corridas sobre la home: **Performance 98 / 97 / 97**, Accessibility 100, Best Practices 100, SEO 100. FCP 1,5–1,8 s, LCP 2,0–2,5 s, TBT 20–40 ms, CLS 0,001–0,014 (sube un poco por el cambio de tipografía al cargar, pero muy por debajo de 0,1). Antes del rediseño: Performance 97–99, LCP 2,0–2,3 s: el costo de las tipografías (~90 kB) quedó dentro del ruido de la medición.

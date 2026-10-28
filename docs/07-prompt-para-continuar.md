@@ -17,7 +17,7 @@ alquiler para estudiantes antes de pagar la seña. Ya está desplegada y funcion
 Antes de tocar código
 1. Leé README.md (tabla "Qué es real y qué no"), docs/03, docs/04, docs/06 y este archivo.
 2. Corré: corepack pnpm@10.15.0 install && corepack pnpm@10.15.0 lint && corepack pnpm@10.15.0 typecheck
-   && corepack pnpm@10.15.0 test && corepack pnpm@10.15.0 build. Línea base: 186 tests, build OK.
+   && corepack pnpm@10.15.0 test && corepack pnpm@10.15.0 build. Línea base: 198 tests, build OK.
    (No hay pnpm global; pnpm 12 rechaza el lockfile, por eso pnpm 10.15.0 vía corepack.)
 3. Si algo no está claro, preguntame. No asumas.
 
