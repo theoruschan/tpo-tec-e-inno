@@ -6,7 +6,11 @@ import { QUICK_DEMO_SCENARIOS } from '../src/infrastructure/data/datasets';
 import { Navbar } from '../src/presentation/components/Navbar';
 import { VerdictStamp } from '../src/presentation/components/VerdictStamp';
 import { AboutView } from '../src/presentation/screens/AboutView';
+import { VerifyListingUseCase } from '../src/application/VerifyListingUseCase';
+import { INITIAL_FRAUD_DIRECTORY, KNOWN_IMAGE_SIGNATURES, UNIVERSITY_ZONES } from '../src/infrastructure/data/datasets';
 import { Screen1Home } from '../src/presentation/screens/Screen1HomeAnd2Instructions';
+import { Screen3Input } from '../src/presentation/screens/Screen3InputAnd4Quality';
+import { Screen7Details, Screen8Report } from '../src/presentation/screens/Screen7DetailsAnd8Report';
 
 afterEach(cleanup);
 
@@ -129,5 +133,63 @@ describe('Navbar', () => {
     expect(screen.queryByRole('list', { name: 'Flujo UX (8 Pantallas)' })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: /Directorio CBU/ }));
     expect(onNavigate).toHaveBeenCalledWith('view-directory');
+  });
+});
+
+describe('Segunda pasada de diseño: Pantallas 3, 7 y 8', () => {
+  const noopHasher = { hash: async () => '0'.repeat(16) } as never;
+  const noopReader = { read: async () => '' } as never;
+  const deps = {
+    zones: UNIVERSITY_ZONES,
+    knownImages: KNOWN_IMAGE_SIGNATURES,
+    fraudDirectory: INITIAL_FRAUD_DIRECTORY,
+  };
+  const result = new VerifyListingUseCase().execute(QUICK_DEMO_SCENARIOS[0].input, deps);
+
+  it('Pantalla 3: ficha con las 4 secciones numeradas y el mismo título exacto', () => {
+    render(
+      <Screen3Input
+        input={QUICK_DEMO_SCENARIOS[0].input}
+        onChange={vi.fn()}
+        onSubmitToQualityGate={vi.fn()}
+        onBack={vi.fn()}
+        imageHasher={noopHasher}
+        textReader={noopReader}
+      />
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Pegá el link o la captura.' })).toBeTruthy();
+    for (const title of ['El anuncio', 'El alquiler', 'Quién cobra', 'Autorización']) {
+      expect(screen.getByRole('heading', { level: 2, name: title })).toBeTruthy();
+    }
+    expect(screen.getByRole('button', { name: 'Revisar calidad de los datos' })).toBeTruthy();
+  });
+
+  it('Pantalla 7: cada motivo va numerado y se conservan las tres acciones', () => {
+    render(
+      <Screen7Details
+        result={result}
+        onReportFraud={async () => 'ok'}
+        onRequestSecondVerification={vi.fn()}
+        onGoToReport={vi.fn()}
+        onBackToVerdict={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Por qué marcamos este anuncio.' })).toBeTruthy();
+    expect(document.body.textContent).toContain('01');
+    expect(screen.getByRole('heading', { level: 3, name: result.findings[0].title })).toBeTruthy();
+    expect(screen.getByText('Reportar estafa confirmada')).toBeTruthy();
+    expect(screen.getByText('Pedir segunda verificación')).toBeTruthy();
+    expect(screen.getByText('Contactar soporte humano')).toBeTruthy();
+  });
+
+  it('Pantalla 8: certificado con sello del veredicto y el texto del prototipo', () => {
+    const { container } = render(
+      <Screen8Report result={result} onBackToDetails={vi.fn()} pdfExporter={{ toPdf: async () => new Blob() }} />
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Resumen de la verificación.' })).toBeTruthy();
+    expect(container.querySelector('.stamp')?.textContent).toBe(result.verdict);
+    expect(screen.getByText(`${result.verdict} (Nivel de confianza: ${result.confidenceLevel}%)`, { exact: false })).toBeTruthy();
+    expect(screen.getByText('Certificado Preventivo Estudiantil')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Descargar PDF' })).toBeTruthy();
   });
 });

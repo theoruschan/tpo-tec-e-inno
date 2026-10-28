@@ -10,7 +10,6 @@ import {
   ArrowLeft,
   ArrowRight,
   ShieldAlert,
-  ShieldCheck,
   Info,
   Printer,
 } from 'lucide-react';
@@ -19,6 +18,7 @@ import { VerificationResult } from '../../domain/entities/types';
 import { ReportPdfExporter } from '../../domain/ports/ReportPdfExporter';
 import { PriceComparisonChart } from '../components/PriceComparisonChart';
 import { SupportDialog } from '../components/SupportDialog';
+import { VerdictStamp } from '../components/VerdictStamp';
 import { formatDateTime } from '../utils/formatDateTime';
 
 interface Screen7DetailsProps {
@@ -64,27 +64,27 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+      <div className="rounded-3xl border border-slate-300 bg-white p-6 shadow-md sm:p-8">
+        <p className="border-b border-dashed border-slate-300 pb-3 font-mono text-xs font-medium uppercase tracking-[0.18em] text-slate-600">
           Pantalla 7 de 8 · Detalles de la verificación
-        </div>
+        </p>
 
-        <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">
+        <h1 className="mt-4 text-3xl sm:text-4xl">
           Por qué marcamos este anuncio.
         </h1>
-        <p className="mt-1 text-xs text-slate-600">
+        <p className="mt-2 text-sm leading-relaxed text-slate-700">
           Cada motivo de alerta o validación técnica se explica por separado para
           que puedas decidir con evidencia concreta.
         </p>
 
         {/* Evidencia visual si se detectó foto robada en otro anuncio */}
         {result.matchedDuplicateImage && (
-          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50/70 p-4">
+          <div className="mt-5 border-l-4 border-red-700 bg-red-50/70 p-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <img
                 src={result.matchedDuplicateImage.thumbnailUrl}
                 alt={result.matchedDuplicateImage.title}
-                className="h-28 w-40 rounded-xl object-cover border border-red-200 shrink-0"
+                className="h-28 w-40 shrink-0 -rotate-2 border-4 border-white object-cover shadow-md ring-1 ring-red-300"
               />
               <div className="space-y-1 text-xs">
                 <span className="inline-block rounded-md bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white">
@@ -111,11 +111,11 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
 
         {/* Desglose individual de motivos (Requisito de Pantalla 7) */}
         <div className="mt-6 space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <h2 className="border-b-2 border-slate-900 pb-1.5 font-serif text-xl font-semibold text-slate-900">
             Motivos explicados por separado ({result.findings.length})
           </h2>
 
-          {result.findings.map((finding) => {
+          {result.findings.map((finding, index) => {
             const isCrit = finding.severity === 'critical';
             const isWarn = finding.severity === 'warning';
             const isPos = finding.severity === 'positive';
@@ -123,18 +123,21 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
             return (
               <div
                 key={finding.id}
-                className={`rounded-2xl border p-4 ${
+                className={`border-b border-l-4 border-b-slate-200 py-3 pl-4 pr-1 ${
                   isCrit
-                    ? 'border-red-200 bg-red-50/60'
+                    ? 'border-l-red-700 bg-red-50/50'
                     : isWarn
-                      ? 'border-amber-200 bg-amber-50/60'
+                      ? 'border-l-amber-600 bg-amber-50/50'
                       : isPos
-                        ? 'border-emerald-200 bg-emerald-50/50'
-                        : 'border-slate-200 bg-slate-50'
+                        ? 'border-l-emerald-700 bg-emerald-50/40'
+                        : 'border-l-slate-400'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
+                    <span aria-hidden="true" className="w-6 shrink-0 font-mono text-xs text-slate-500">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
                     {isCrit ? (
                       <ShieldAlert className="h-5 w-5 shrink-0 text-red-600 mt-0.5" />
                     ) : isWarn ? (
@@ -152,14 +155,14 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
                         {finding.description}
                       </p>
                       {finding.evidenceDetail && (
-                        <p className="mt-1.5 text-[11px] font-medium text-slate-500">
+                        <p className="mt-1.5 font-mono text-[11px] text-slate-600">
                           {finding.evidenceDetail}
                         </p>
                       )}
                     </div>
                   </div>
                   {finding.riskPoints > 0 && (
-                    <span className="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-bold text-red-800">
+                    <span className="shrink-0 border border-red-700 px-2 py-0.5 font-mono text-[11px] font-medium text-red-800">
                       +{finding.riskPoints} pts riesgo
                     </span>
                   )}
@@ -175,8 +178,8 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
         </div>
 
         {/* Las 3 Acciones de Usuario especificadas en la Pantalla 7 del PDF */}
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+        <div className="mt-6 border-2 border-slate-900 p-4">
+          <h2 className="font-serif text-xl font-semibold text-slate-900">
             Acciones disponibles ante este resultado
           </h2>
 
@@ -186,10 +189,10 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
               type="button"
               disabled={hasReported}
               onClick={() => setShowReportBox(!showReportBox)}
-              className={`flex flex-col items-start justify-between rounded-xl border p-3.5 text-left transition ${
+              className={`flex flex-col items-start justify-between rounded-md border-2 p-3.5 text-left transition ${
                 hasReported
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
-                  : 'border-rose-200 bg-white hover:border-rose-400 hover:bg-rose-50/40'
+                  ? 'border-emerald-700 bg-emerald-50 text-emerald-900'
+                  : 'border-slate-300 bg-white hover:border-red-700 hover:bg-red-50/40'
               }`}
             >
               <Flag
@@ -213,9 +216,9 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
             <button
               type="button"
               onClick={onRequestSecondVerification}
-              className="flex flex-col items-start justify-between rounded-xl border border-slate-200 bg-white p-3.5 text-left transition hover:border-indigo-300 hover:bg-indigo-50/40"
+              className="flex flex-col items-start justify-between rounded-md border-2 border-slate-300 bg-white p-3.5 text-left transition hover:border-slate-900"
             >
-              <RefreshCcw className="h-5 w-5 text-indigo-600" />
+              <RefreshCcw className="h-5 w-5 text-slate-900" />
               <div className="mt-2">
                 <span className="block text-xs font-bold text-slate-900">
                   Pedir segunda verificación
@@ -230,9 +233,9 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
             <button
               type="button"
               onClick={() => setIsSupportOpen(true)}
-              className="flex flex-col items-start justify-between rounded-xl border border-slate-200 bg-white p-3.5 text-left transition hover:border-indigo-300 hover:bg-indigo-50/40"
+              className="flex flex-col items-start justify-between rounded-md border-2 border-slate-300 bg-white p-3.5 text-left transition hover:border-slate-900"
             >
-              <LifeBuoy className="h-5 w-5 text-indigo-600" />
+              <LifeBuoy className="h-5 w-5 text-slate-900" />
               <div className="mt-2">
                 <span className="block text-xs font-bold text-slate-900">
                   Contactar soporte humano
@@ -251,7 +254,7 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
           {showReportBox && !hasReported && (
             <form
               onSubmit={handleConfirmReport}
-              className="mt-4 rounded-xl border border-rose-200 bg-rose-50/60 p-4 space-y-3"
+              className="mt-4 space-y-3 border-l-4 border-red-700 bg-red-50/60 p-4"
             >
               <label
                 htmlFor="report-reason"
@@ -303,7 +306,7 @@ export const Screen7Details: React.FC<Screen7DetailsProps> = ({
           <button
             type="button"
             onClick={onGoToReport}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-sm hover:bg-indigo-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-xs font-bold text-white hover:bg-slate-700"
           >
             Generar Resumen y Reporte (Pantalla 8)
             <ArrowRight className="h-4 w-4" />
@@ -406,35 +409,36 @@ export const Screen8Report: React.FC<Screen8ReportProps> = ({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="print-container rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="print-container rounded-3xl border-4 border-double border-slate-900 bg-white p-6 shadow-md sm:p-10">
+        <p className="no-print border-b border-dashed border-slate-300 pb-3 font-mono text-xs font-medium uppercase tracking-[0.18em] text-slate-600">
+          Pantalla 8 de 8 · Reporte descargable y compartible
+        </p>
+
+        <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-b-2 border-slate-900 pb-5">
           <div>
-            <div className="no-print mb-2 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-              Pantalla 8 de 8 · Reporte descargable y compartible
-            </div>
-            <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">
+            <h1 className="text-3xl sm:text-4xl">
               Resumen de la verificación.
             </h1>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-2 font-mono text-xs text-slate-700">
               ID Reporte: <strong>{result.id}</strong> · Emitido el{' '}
               {formatDateTime(result.createdAt)}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-right">
-            <span className="block text-[11px] font-bold uppercase text-slate-500">
+          <div className="border-2 border-slate-900 px-4 py-2.5 text-right">
+            <span className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-700">
               CuartoSeguro · UADE G12
             </span>
-            <span className="text-xs font-semibold text-emerald-700">
+            <span className="font-serif text-sm font-semibold text-slate-900">
               Certificado Preventivo Estudiantil
             </span>
           </div>
         </div>
 
         {/* 1. Fecha y anuncio verificado (link o captura) */}
-        <div className="mt-5 grid grid-cols-1 gap-4 rounded-2xl bg-slate-50 p-4 text-xs sm:grid-cols-2">
+        <div className="mt-5 grid grid-cols-1 gap-4 border-b border-dashed border-slate-300 pb-5 text-xs sm:grid-cols-2">
           <div>
-            <span className="font-bold text-slate-500 uppercase">
+            <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-slate-600">
               Anuncio verificado (Link o Captura):
             </span>
             <p className="mt-1 break-all font-semibold text-slate-900">
@@ -447,7 +451,7 @@ export const Screen8Report: React.FC<Screen8ReportProps> = ({
             )}
           </div>
           <div>
-            <span className="font-bold text-slate-500 uppercase">
+            <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-slate-600">
               Datos del alquiler y propietario:
             </span>
             <p className="mt-1 font-semibold text-slate-900">
@@ -468,39 +472,33 @@ export const Screen8Report: React.FC<Screen8ReportProps> = ({
 
         {/* 2. Veredicto final y nivel de confianza + 4. Recomendación */}
         <div
-          className={`mt-5 rounded-2xl border-2 p-5 ${
+          className={`mt-5 border-b border-t-8 border-slate-300 py-5 ${
             isSuspicious
-              ? 'border-red-300 bg-red-50'
+              ? 'border-t-red-700'
               : isVerified
-                ? 'border-emerald-300 bg-emerald-50'
-                : 'border-amber-300 bg-amber-50'
+                ? 'border-t-emerald-700'
+                : 'border-t-amber-600'
           }`}
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {isSuspicious ? (
-                <ShieldAlert className="h-8 w-8 text-red-600" />
-              ) : isVerified ? (
-                <ShieldCheck className="h-8 w-8 text-emerald-600" />
-              ) : (
-                <AlertTriangle className="h-8 w-8 text-amber-600" />
-              )}
-              <div>
-                <span className="text-xs font-bold uppercase text-slate-600">
-                  Veredicto Final
-                </span>
-                <h2 className="text-xl font-black text-slate-900">
-                  {result.verdict} (Nivel de confianza: {result.confidenceLevel}
-                  %)
-                </h2>
+            <div>
+              <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-slate-600">
+                Veredicto Final
+              </span>
+              <div className="mt-2">
+                <VerdictStamp verdict={result.verdict} />
               </div>
+              <h2 className="mt-3 font-serif text-lg font-semibold text-slate-900">
+                {result.verdict} (Nivel de confianza: {result.confidenceLevel}
+                %)
+              </h2>
             </div>
 
-            <div className="rounded-xl bg-white px-4 py-2 shadow-2xs">
-              <span className="block text-[10px] font-bold uppercase text-slate-500">
+            <div className="border-2 border-slate-900 px-4 py-2">
+              <span className="block font-mono text-[10px] font-medium uppercase tracking-wider text-slate-600">
                 Recomendación sugerida
               </span>
-              <span className="text-sm font-black text-slate-900">
+              <span className="font-serif text-base font-semibold text-slate-900">
                 {result.recommendation}
               </span>
             </div>
@@ -509,15 +507,15 @@ export const Screen8Report: React.FC<Screen8ReportProps> = ({
 
         {/* 3. Motivos detectados */}
         <div className="mt-5">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <h3 className="font-serif text-xl font-semibold text-slate-900">
             Motivos detectados en el análisis
           </h3>
-          <ul className="mt-2.5 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white">
+          <ul className="mt-2.5 divide-y divide-slate-200 border-y-2 border-slate-900">
             {result.findings.map((f) => (
               <li key={f.id} className="p-3.5 text-xs">
                 <div className="flex items-center justify-between font-bold text-slate-900">
                   <span>• {f.title}</span>
-                  <span className="text-[11px] text-slate-500 uppercase">
+                  <span className="font-mono text-[11px] text-slate-600 uppercase">
                     {f.category.replace(/_/g, ' ')}
                   </span>
                 </div>
@@ -527,10 +525,10 @@ export const Screen8Report: React.FC<Screen8ReportProps> = ({
           </ul>
         </div>
 
-        <p className="mt-5 text-xs font-semibold text-amber-800">
+        <p className="mt-5 border-l-4 border-amber-700 bg-amber-50/60 p-3 text-xs font-semibold text-amber-900">
           {report.disclaimer}
         </p>
-        <p className="mt-1 text-[11px] text-slate-500">
+        <p className="mt-2 text-[11px] text-slate-600">
           Nota: Este reporte fue generado automáticamente cruzando búsqueda
           inversa de imágenes, estadísticas de precios por zona universitaria
           (BI) y el directorio colaborativo de CBU/reportes de CuartoSeguro. No
@@ -561,7 +559,7 @@ export const Screen8Report: React.FC<Screen8ReportProps> = ({
             <button
               type="button"
               onClick={handleShareWithFamily}
-              className="inline-flex items-center gap-2 rounded-xl border border-indigo-300 bg-indigo-50 px-5 py-3 text-xs font-bold text-indigo-800 hover:bg-indigo-100"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-white px-5 py-3 text-xs font-bold text-slate-900 hover:bg-slate-100"
             >
               <Share2 className="h-4 w-4" />
               Compartir con quien vaya a pagar (ej. un familiar)
@@ -571,14 +569,14 @@ export const Screen8Report: React.FC<Screen8ReportProps> = ({
               type="button"
               onClick={handleDownloadPdf}
               disabled={isGeneratingPdf}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-xs font-bold text-white hover:bg-slate-700 disabled:opacity-60"
             >
               <FileDown className="h-4 w-4" />
               {isGeneratingPdf ? 'Generando PDF…' : 'Descargar PDF'}
             </button>
           </div>
         </div>
-        <p aria-live="polite" className="no-print mt-3 text-right text-xs font-semibold text-indigo-800">
+        <p aria-live="polite" className="no-print mt-3 text-right text-xs font-semibold text-slate-800">
           {actionMessage}
         </p>
       </div>

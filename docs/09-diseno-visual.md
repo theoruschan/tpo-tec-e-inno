@@ -17,6 +17,13 @@ La app tenía un aspecto de plantilla genérica (violeta, tarjetas redondeadas, 
 
 Todo el tema vive en [`src/index.css`](../src/index.css), en un bloque `@theme` de Tailwind 4. En vez de reescribir cada pantalla, se **redefinieron las escalas que ya usaba toda la app**: `slate` (neutros) pasó a papel/tinta cálidos e `indigo` (color de marca) pasó a tinta; también los radios (`--radius-*`) y las sombras (`--shadow-*`). Cambiar la identidad de nuevo es cambiar ese bloque. Piezas propias: `VerdictStamp`, la clase `.stamp`, `Navbar` y las pantallas 1 y 6 (más `AboutView`).
 
+## Segunda pasada: formulario, detalles y reporte
+
+- **Pantalla 3 (formulario):** se lee como una ficha. Cuatro secciones numeradas con título serif y regla (1 El anuncio, 2 El alquiler, 3 Quién cobra, 4 Autorización), etiquetas en mono mayúsculas, los avisos de lectura de captura y de foto como notas al margen (borde izquierdo en vez de cajas redondeadas) y los casos de ejemplo en una franja punteada. No cambió ningún campo, texto exacto del prototipo ni comportamiento.
+- **Pantalla 7 (detalles):** los motivos son un registro numerado (01, 02…) con borde de color según gravedad en lugar de tarjetas; la foto repetida se muestra como una foto "pegada" con leve giro; las tres acciones del PDF se conservan.
+- **Pantalla 8 (reporte):** certificado con marco doble, datos en mono, el veredicto con el mismo sello de la Pantalla 6 y la recomendación enmarcada. El texto "Veredicto (Nivel de confianza: X%)" se mantiene debajo del sello.
+- Verificación: axe-core sin violaciones en las pantallas 3, 4, 6, 7 y 8; sin desborde horizontal a 375 px; 201 tests en verde (3 nuevos).
+
 ## Restricciones que condicionan el diseño
 
 - **CSP de producción:** `font-src 'self' data:` y `style-src 'self' 'unsafe-inline'` → las tipografías se empaquetan con `@fontsource` (no se puede usar Google Fonts) y el grano de papel es un SVG embebido (`img-src` permite `data:`).
@@ -25,7 +32,7 @@ Todo el tema vive en [`src/index.css`](../src/index.css), en un bloque `@theme` 
 
 ## Límites conocidos
 
-- El rediseño específico llegó a la portada, la barra superior y el resultado; el resto de las pantallas (formulario, detalles, reporte, directorio, laboratorio, historial) heredan el tema por las escalas de color, los radios y las sombras, pero conservan su estructura anterior. Son candidatas a un segundo pase.
+- El rediseño específico llegó a la portada, la barra superior, el resultado y, en una segunda pasada, el formulario (Pantalla 3), los detalles (Pantalla 7) y el reporte (Pantalla 8). Las demás vistas (instrucciones, calidad, directorio, laboratorio, historial) heredan el tema por las escalas de color, los radios y las sombras, pero conservan su estructura anterior.
 - La animación del sello no se pudo ver "en vivo" en las pruebas automatizadas (la pestaña de prueba pausa las animaciones en segundo plano): se verificó su estado inicial y final y que no genera desborde, no el movimiento.
 - El PDF descargable (jsPDF) usa solo el encabezado en tinta; su maquetación sigue siendo la de la Fase 4 (Helvetica, sin Fraunces).
 

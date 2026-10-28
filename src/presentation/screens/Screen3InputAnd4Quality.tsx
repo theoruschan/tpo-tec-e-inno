@@ -102,6 +102,17 @@ type HashingState =
   | { status: 'hashing' }
   | { status: 'error'; message: string };
 
+/** Encabezado numerado de cada sección de la ficha (el formulario se lee como un documento). */
+const SectionHeading: React.FC<{ n: string; title: string; hint?: string }> = ({ n, title, hint }) => (
+  <div className="flex items-baseline gap-3 border-b-2 border-slate-900 pb-1.5 pt-3">
+    <span aria-hidden="true" className="font-serif text-3xl font-semibold leading-none text-slate-400">
+      {n}
+    </span>
+    <h2 className="font-serif text-xl font-semibold text-slate-900">{title}</h2>
+    {hint && <span className="ml-auto hidden text-xs text-slate-600 sm:inline">{hint}</span>}
+  </div>
+);
+
 export const Screen3Input: React.FC<Screen3InputProps> = ({
   input,
   onChange,
@@ -178,46 +189,44 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
   const extractedRows = ocr.status === 'done' || ocr.status === 'applied' ? describeExtracted(ocr.data) : [];
 
   return (
-    <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-          Pantalla 3 de 8 · Carga del anuncio
-        </div>
+    <div className="mx-auto max-w-3xl rounded-3xl border border-slate-300 bg-white p-6 shadow-md sm:p-8">
+      <p className="border-b border-dashed border-slate-300 pb-3 font-mono text-xs font-medium uppercase tracking-[0.18em] text-slate-600">
+        Pantalla 3 de 8 · Carga del anuncio
+      </p>
 
-        {/* Botones rápidos para autocompletar casos de prueba */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] font-semibold text-slate-500">
-            Autocompletar caso:
-          </span>
-          {QUICK_DEMO_SCENARIOS.map((demo) => (
-            <button
-              key={demo.id}
-              type="button"
-              onClick={() => onChange({ ...demo.input })}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
-            >
-              <Sparkles className="h-3 w-3 text-indigo-600" />
-              {demo.badge}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <h1 className="mt-3 text-2xl font-extrabold text-slate-900 sm:text-3xl">
-        Pegá el link o la captura.
-      </h1>
-      <p className="mt-1 text-xs text-slate-600">
+      <h1 className="mt-4 text-3xl sm:text-4xl">Pegá el link o la captura.</h1>
+      <p className="mt-2 text-sm leading-relaxed text-slate-700">
         Completá los datos del aviso y lo que te informó el propietario por chat
         para cruzar fotos, precio de la zona, identidad y CBU/Alias.
       </p>
 
+      {/* Botones rápidos para autocompletar casos de prueba */}
+      <div className="mt-4 flex flex-wrap items-center gap-2 border border-dashed border-slate-300 bg-slate-50 px-3 py-2">
+        <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-slate-600">
+          Autocompletar caso:
+        </span>
+        {QUICK_DEMO_SCENARIOS.map((demo) => (
+          <button
+            key={demo.id}
+            type="button"
+            onClick={() => onChange({ ...demo.input })}
+            className="inline-flex items-center gap-1 rounded-md border border-slate-400 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-800 hover:border-slate-900"
+          >
+            <Sparkles className="h-3 w-3 text-slate-600" />
+            {demo.badge}
+          </button>
+        ))}
+      </div>
+
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+        <SectionHeading n="1" title="El anuncio" hint="Link o captura, y la foto" />
+
         {/* Link o captura */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="sm:col-span-2">
             <label
               htmlFor="listing-url"
-              className="block text-xs font-bold text-slate-800"
+              className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-800"
             >
               Link del anuncio o referencia de publicación *
             </label>
@@ -245,7 +254,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
           <div>
             <label
               htmlFor="capture-upload"
-              className="block text-xs font-bold text-slate-800"
+              className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-800"
             >
               Adjuntar foto o captura (opcional)
             </label>
@@ -276,7 +285,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
         {ocr.status !== 'idle' && (
           <div
             aria-live="polite"
-            className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-3 text-xs text-slate-800"
+            className="border-l-4 border-slate-900 bg-slate-100/80 p-3 text-xs text-slate-800"
           >
             <p className="flex items-center gap-1.5 font-bold text-slate-900">
               <ScanText className="h-4 w-4 text-indigo-700" aria-hidden="true" />
@@ -373,7 +382,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
 
         <div
           aria-live="polite"
-          className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-700"
+          className="border-l-4 border-slate-400 bg-slate-100/60 p-3 text-xs text-slate-700"
         >
           <p className="flex items-center gap-1.5 font-bold text-slate-800">
             <ScanSearch className="h-4 w-4 text-indigo-600" />
@@ -424,9 +433,11 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
           </p>
         </div>
 
+        <SectionHeading n="2" title="El alquiler" hint="Qué es y cuánto piden" />
+
         {/* Tipo de alojamiento: define contra qué precio de referencia se compara */}
         <div>
-          <label htmlFor="property-type" className="block text-xs font-bold text-slate-800">
+          <label htmlFor="property-type" className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-800">
             Tipo de alojamiento *
           </label>
           <span id="property-type-hint" className="mb-1 block text-xs text-slate-500">
@@ -452,7 +463,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
           <div>
             <label
               htmlFor="zone-select"
-              className="block text-xs font-bold text-slate-800"
+              className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-800"
             >
               Ciudad o zona del alquiler *
             </label>
@@ -487,7 +498,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
           <div>
             <label
               htmlFor="monthly-rent"
-              className="block text-xs font-bold text-slate-800"
+              className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-800"
             >
               Precio mensual publicado (ARS) *
             </label>
@@ -518,7 +529,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
           <div>
             <label
               htmlFor="deposit-amount"
-              className="block text-xs font-bold text-slate-800"
+              className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-800"
             >
               Monto de la seña solicitada (ARS) *
             </label>
@@ -580,22 +591,19 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
           )}
         </p>
 
+        <SectionHeading n="3" title="Quién cobra" hint="Requeridos por el Control de Calidad (Pantalla 4)" />
+
         {/* Datos de contacto e identidad del propietario y CBU/Alias */}
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-              Datos del propietario / inmobiliaria y cuenta de destino
-            </h2>
-            <span className="text-[11px] text-slate-500">
-              Requeridos por el Control de Calidad (Pantalla 4)
-            </span>
-          </div>
+        <div className="space-y-4">
+          <p className="font-mono text-[11px] font-medium uppercase tracking-wider text-slate-600">
+            Datos del propietario / inmobiliaria y cuenta de destino
+          </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <label
                 htmlFor="owner-name"
-                className="block text-xs font-semibold text-slate-800"
+                className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-800"
               >
                 Nombre completo o Inmobiliaria
               </label>
@@ -617,7 +625,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
             <div>
               <label
                 htmlFor="owner-phone"
-                className="block text-xs font-semibold text-slate-800"
+                className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-800"
               >
                 Teléfono / WhatsApp de contacto
               </label>
@@ -639,7 +647,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
             <div>
               <label
                 htmlFor="owner-cbu"
-                className="block text-xs font-semibold text-slate-800"
+                className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-800"
               >
                 CBU / CVU o Alias para la seña
               </label>
@@ -664,7 +672,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
             <div>
               <label
                 htmlFor="photo-count"
-                className="block text-xs font-semibold text-slate-800"
+                className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-800"
               >
                 Cantidad de fotos en el aviso
               </label>
@@ -690,7 +698,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
             <div>
               <label
                 htmlFor="account-age"
-                className="block text-xs font-semibold text-slate-800"
+                className="block font-mono text-[11px] font-medium uppercase tracking-wider text-slate-800"
               >
                 Antigüedad de la cuenta (meses)
               </label>
@@ -787,8 +795,10 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
           </div>
         </div>
 
+        <SectionHeading n="4" title="Autorización" />
+
         {/* Confirmación de autorización (Requisito explícito de Pantalla 3) */}
-        <label className="flex items-start gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 text-xs text-slate-800 cursor-pointer">
+        <label className="flex cursor-pointer items-start gap-3 border-2 border-slate-900 bg-slate-100/60 p-4 text-xs text-slate-800">
           <input
             type="checkbox"
             required
@@ -796,7 +806,7 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
             onChange={(e) =>
               onChange({ ...input, authorizedProcessing: e.target.checked })
             }
-            className="mt-0.5 h-4 w-4 rounded border-indigo-300 text-indigo-600"
+            className="mt-0.5 h-4 w-4 accent-slate-900"
           />
           <span>
             <strong>Confirmar autorización para procesar el anuncio:</strong> Autorizo a CuartoSeguro
@@ -814,14 +824,14 @@ export const Screen3Input: React.FC<Screen3InputProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+            className="rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
           >
             ← Volver a instrucciones
           </button>
 
           <button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-indigo-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white hover:bg-slate-700"
           >
             Revisar calidad de los datos
             <ArrowRight className="h-4 w-4" />
