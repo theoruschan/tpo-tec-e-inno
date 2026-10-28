@@ -90,6 +90,7 @@ Ejemplos listos para copiar: [`ejemplos/dataset-ejemplo.csv`](./ejemplos/dataset
 | `requests_advance_before_visit`, `is_registered_real_estate` | No | `si`/`no`, `true`/`false`, `1`/`0` |
 | `real_estate_license` | No | Texto (ej. `CUCICBA 1234`) |
 | `split` | No | `calibration` o `evaluation` (si se usa, tiene que estar en todas las filas) |
+| `property_type` | No | `habitacion` (default), `monoambiente` o `2_ambientes`. Monoambiente y 2 ambientes se comparan contra el índice de mercado de la ciudad |
 
 Ejemplo mínimo (CSV, separador `,` o `;`):
 

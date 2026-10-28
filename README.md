@@ -31,7 +31,7 @@ El resultado es un veredicto (`Anuncio sospechoso` / `Verificado` / `Sin datos s
 | Lectura de la captura (OCR) | **Real**, en el navegador con tesseract.js (la captura no sale del dispositivo). Propone precio, seña, CBU/alias (valida los dígitos del CBU), teléfono, nombre, link y zona; el estudiante confirma. Probado con capturas sintéticas, todavía no con capturas reales de WhatsApp/Marketplace. |
 | Huella perceptual de la foto (dHash) | **Real**, se calcula en el navegador (la foto no sale del dispositivo). |
 | Base de fotos conocidas | **Semilla de 5 fotos + índice colaborativo en Supabase**: cada verificación con foto guarda su huella (no la imagen) y avisa si la misma foto aparece en otro anuncio verificado con otro precio o contacto. Arranca vacío, así que detecta más a medida que se usa. **No es una búsqueda en toda la web.** |
-| Precios promedio por zona | **Datos semilla** cargados a mano para el TP, no un relevamiento actualizado. |
+| Precios de referencia | **Monoambiente y 2 ambientes: Zonaprop Index real** (CABA sep 2026; Córdoba mar 2026; GBA Sur como proxy de La Plata), promedio de la ciudad, con fuente y mes en pantalla; se actualiza solo cada mes con una GitHub Action. **Habitaciones: estimación del equipo** (no hay índice público) y la app lo aclara. Rosario y algunos tipos no tienen índice: ahí no se compara el precio. |
 | Matrícula / registros públicos | **No se consulta ningún padrón real.** Solo se usa lo que declara el estudiante. |
 | Directorio de CBU/alias | **Real y compartido en Supabase**: CBU/alias/teléfono guardados como HMAC con sal secreta, enmascarados al mostrarse, reportes nuevos en moderación y regla de 3 reportes independientes. Los 5 casos semilla son **ficticios**. Si Supabase no responde, la app cae al modo local y lo indica. "Independiente" = otro navegador/dispositivo: no frena a alguien decidido a abusar. |
 | Experimento de 30 anuncios | **Dataset curado e ilustrativo.** El 100% de recall se mide sobre los mismos casos usados para calibrar las reglas: **no es una validación independiente**. La app permite cargar un CSV/JSON propio y separa calibración y evaluación ([docs/04](./docs/04-experimento-validacion-30-anuncios.md)). |
@@ -49,7 +49,7 @@ pnpm install
 pnpm dev          # servidor de desarrollo
 pnpm lint         # ESLint
 pnpm typecheck    # TypeScript estricto
-pnpm test         # Vitest (131 tests)
+pnpm test         # Vitest (143 tests)
 pnpm build        # build de producción en dist/
 pnpm preview      # sirve dist/ localmente
 ```

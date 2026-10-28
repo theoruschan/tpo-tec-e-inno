@@ -94,6 +94,21 @@ $$\text{Ratio de Seña} = \frac{S_{\text{anuncio}}}{P_{\text{anuncio}}} \times 1
 
 ---
 
+#### Precio de referencia: de dónde sale (actualizado 27/10/2026)
+
+El estudiante elige el **tipo de alojamiento** en la Pantalla 3, porque una habitación y un departamento entero no se pueden comparar contra el mismo precio:
+
+| Tipo | Referencia | Real o estimada |
+| :--- | :--- | :--- |
+| Habitación (depto compartido, casa o residencia) | Valor por zona del dataset semilla | **Estimación del equipo.** No existe un índice público de precios de habitaciones; la UI lo dice. |
+| Monoambiente | Zonaprop Index: CABA (sep 2026, $779.370) | **Real** (precio medio de oferta publicado). Córdoba, La Plata y Rosario: sin índice → no se compara. |
+| 2 ambientes / 1 dormitorio | Zonaprop Index: CABA (sep 2026, $898.154), Córdoba (mar 2026, $619.061), GBA Sur como proxy de La Plata (sep 2026, $643.213) | **Real**, con las salvedades de abajo. Rosario: sin índice → no se compara. |
+
+- **Salvedades:** son precios de **oferta** (avisos publicados), no de contratos firmados. Son el promedio de **toda la ciudad** (o de toda GBA Sur para La Plata), no del barrio; los motivos lo dicen ("…del promedio de CABA"). El índice no publica dispersión: la banda ±25 % y la desviación (15 %) son supuestos nuestros. El último reporte de Córdoba es de marzo 2026; si el dato tiene 4 meses o más, la app avisa que los precios actuales probablemente sean más altos.
+- **Sin índice:** el hallazgo `bi-price-no-benchmark` (informativo, 0 puntos de riesgo) explica que el precio no se comparó; el resto de los chequeos (seña antes de visitar, fotos, directorio) sigue funcionando.
+- **Datos y actualización:** `src/infrastructure/data/marketPrices.json` (fuente, período, URL del PDF y precios). `scripts/update_market_prices.py` busca reportes más nuevos, lee el PDF con pypdf y actualiza el JSON; la GitHub Action `update-market-prices.yml` lo corre el día 20 de cada mes (o a mano desde la pestaña Actions), valida con `tests/marketPrices.test.ts` y commitea. Si un PDF nuevo cambia de formato y no se puede leer, la Action falla en vez de guardar datos rotos.
+- **Implementación:** `resolvePriceBenchmark` (aplicación) elige la referencia según tipo y ciudad; `ZonePriceBiService` (dominio) no cambió su lógica de umbrales.
+
 ### Paso 3 de 3: Identidad, Reportes Cruzados y Directorio de CBU/Alias (`IdentityCbuMatcher`)
 Implementa la combinación de las **Alternativas 1, 6 y 11** de la Matriz de Priorización:
 
