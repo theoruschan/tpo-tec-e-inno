@@ -33,6 +33,33 @@ export type VerificationCategory =
   | 'cross_reports'
   | 'data_quality';
 
+/** Tipo de alojamiento: define contra qué precio de referencia se compara. */
+export type PropertyType = 'room' | 'studio' | 'two_rooms';
+
+export interface PriceSource {
+  /** market-index: índice publicado · team-estimate: estimación propia · unavailable: no hay dato. */
+  kind: 'market-index' | 'team-estimate' | 'unavailable';
+  label: string;
+  url?: string;
+  /** Advertencia, por ejemplo si el dato es viejo. */
+  note?: string;
+}
+
+export interface MarketPriceSource {
+  id: string;
+  city: string;
+  label: string;
+  /** Mes del reporte, formato YYYY-MM. */
+  period: string;
+  url: string;
+  prices: Partial<Record<Exclude<PropertyType, 'room'>, number>>;
+}
+
+export interface MarketPriceData {
+  updatedAt: string;
+  sources: MarketPriceSource[];
+}
+
 export interface ZoneBenchmark {
   id: string;
   city: 'CABA' | 'Córdoba' | 'La Plata' | 'Rosario';
@@ -44,6 +71,8 @@ export interface ZoneBenchmark {
   maxReasonableArs: number;
   typicalDepositRatio: number; // Ej: 0.30 (30% del mes)
   publicRegistryQuality: 'Alta' | 'Media' | 'Baja';
+  /** De dónde sale averageRentArs. Sin valor = dato del dataset semilla. */
+  priceSource?: PriceSource;
 }
 
 export interface KnownImageSignature {
@@ -98,6 +127,8 @@ export interface ListingInput {
   hasCaptureUploaded?: boolean;
   captureFileName?: string;
   zoneId: string;
+  /** Sin valor = habitación (lo que cubría el prototipo original). */
+  propertyType?: PropertyType;
   monthlyRentArs: number;
   depositRequestedArs: number;
   ownerName: string;

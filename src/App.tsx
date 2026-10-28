@@ -23,6 +23,7 @@ import {
   UNIVERSITY_ZONES,
 } from './infrastructure/data/datasets';
 import { EXPERIMENT_30_REAL_LISTINGS } from './infrastructure/data/experiment30Listings';
+import { MARKET_PRICES } from './infrastructure/data/marketPrices';
 import { BrowserImageHasher } from './infrastructure/image/BrowserImageHasher';
 import { TesseractImageTextReader } from './infrastructure/ocr/TesseractImageTextReader';
 import { JsPdfReportExporter } from './infrastructure/report/JsPdfReportExporter';
@@ -137,6 +138,7 @@ export const App: React.FC = () => {
           zones: UNIVERSITY_ZONES,
           knownImages: KNOWN_IMAGE_SIGNATURES,
           fraudDirectory: INITIAL_FRAUD_DIRECTORY,
+          marketPrices: MARKET_PRICES,
         }
       ),
     [customDataset, isLabOpen]
@@ -171,6 +173,7 @@ export const App: React.FC = () => {
       fraudDirectory,
       inputIdentifierHashes,
       photoSightings,
+      marketPrices: MARKET_PRICES,
     });
     setActiveResult(computed);
     const updatedHistory = [

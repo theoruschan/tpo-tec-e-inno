@@ -2,6 +2,7 @@ import {
   ExperimentSampleCase,
   ExperimentSplit,
   GroundTruthLabel,
+  PropertyType,
 } from '../domain/entities/types';
 
 /**
@@ -15,7 +16,7 @@ import {
  *                 owner_name, owner_phone, cbu_or_alias, account_age_months,
  *                 photo_count, image_dhash, known_image_id,
  *                 requests_advance_before_visit, is_registered_real_estate,
- *                 real_estate_license, split
+ *                 real_estate_license, split, property_type
  */
 
 export const MAX_DATASET_ROWS = 500;
@@ -50,6 +51,20 @@ const SPLIT_ALIASES: Record<string, ExperimentSplit> = {
 };
 
 const TRUE_VALUES = new Set(['true', '1', 'si', 'sí', 'yes', 'x']);
+
+const PROPERTY_TYPE_ALIASES: Record<string, PropertyType> = {
+  room: 'room',
+  habitacion: 'room',
+  habitación: 'room',
+  cuarto: 'room',
+  studio: 'studio',
+  monoambiente: 'studio',
+  two_rooms: 'two_rooms',
+  '2_ambientes': 'two_rooms',
+  '2 ambientes': 'two_rooms',
+  '1_dormitorio': 'two_rooms',
+  '1 dormitorio': 'two_rooms',
+};
 
 /** CSV mínimo con soporte de comillas dobles (campos con separador o saltos de línea). */
 export function parseCsv(text: string): string[][] {
@@ -212,6 +227,12 @@ export class ParseExperimentDatasetUseCase {
       return 'image_dhash tiene que ser un hash de 16 caracteres hexadecimales.';
     }
 
+    const propertyTypeRaw = str('property_type').toLowerCase();
+    const propertyType = propertyTypeRaw ? PROPERTY_TYPE_ALIASES[propertyTypeRaw] : undefined;
+    if (propertyTypeRaw && !propertyType) {
+      return `property_type "${propertyTypeRaw}" no es válido (usá habitacion, monoambiente o 2_ambientes).`;
+    }
+
     const splitRaw = str('split').toLowerCase();
     const split = splitRaw ? SPLIT_ALIASES[splitRaw] : undefined;
     if (splitRaw && !split) {
@@ -229,6 +250,7 @@ export class ParseExperimentDatasetUseCase {
         id: `CSV-${caseNumber}`,
         listingUrlOrCapture: str('listing_url') || `dataset://anuncio-${caseNumber}`,
         zoneId,
+        propertyType,
         monthlyRentArs,
         depositRequestedArs,
         ownerName: str('owner_name'),

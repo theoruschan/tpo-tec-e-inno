@@ -22,6 +22,39 @@ export class ZonePriceBiService {
   ): ZonePriceBiAnalysis {
     const publishedRent = Math.max(1, input.monthlyRentArs);
     const deposit = Math.max(0, input.depositRequestedArs);
+    const sourceDetail = zone.priceSource
+      ? ` · Referencia: ${zone.priceSource.label}${zone.priceSource.note ? `. ${zone.priceSource.note}` : ''}`
+      : '';
+
+    // Sin precio de referencia para este tipo de alquiler y ciudad: no se compara.
+    if (zone.averageRentArs <= 0) {
+      const depositToRentRatioPercent = Number(((deposit / publishedRent) * 100).toFixed(1));
+      const findings: VerificationFinding[] = [
+        {
+          id: 'bi-price-no-benchmark',
+          category: 'zone_price_bi',
+          severity: 'info',
+          title: `No hay un índice de precios para comparar este alquiler en ${zone.city}`,
+          description: `${zone.priceSource?.label ?? 'No tenemos un precio de referencia para este tipo de alquiler en esta ciudad'}. El precio no suma ni resta riesgo: comparalo vos con otros avisos parecidos de la zona.`,
+          riskPoints: 0,
+        },
+      ];
+      this.appendAdvanceWithoutVisit(findings, input, deposit, depositToRentRatioPercent >= 65, depositToRentRatioPercent);
+      return {
+        comparison: {
+          zone,
+          publishedRentArs: publishedRent,
+          depositRequestedArs: deposit,
+          deviationPercent: 0,
+          zScore: 0,
+          depositToRentRatioPercent,
+          isTooGoodToBeTrue: false,
+          isModeratelyLow: false,
+          isExcessiveDeposit: depositToRentRatioPercent >= 65,
+        },
+        findings,
+      };
+    }
 
     const deviationPercent = Number(
       (((publishedRent - zone.averageRentArs) / zone.averageRentArs) * 100).toFixed(1)
@@ -47,9 +80,9 @@ export class ZonePriceBiService {
         category: 'zone_price_bi',
         severity: 'critical',
         title: `Precio ${Math.abs(deviationPercent)}% por debajo del promedio de ${zone.neighborhood}`,
-        description: `El alquiler publicado ($${publishedRent.toLocaleString('es-AR')}/mes) está muy por debajo del promedio para cuartos/departamentos estudiantiles en ${zone.neighborhood}, ${zone.city} ($${zone.averageRentArs.toLocaleString('es-AR')}/mes). Las ofertas "demasiado buenas para ser reales" son el principal anzuelo para pedir señas rápidas.`,
+        description: `El alquiler publicado ($${publishedRent.toLocaleString('es-AR')}/mes) está muy por debajo del precio de referencia para ${zone.neighborhood}, ${zone.city} ($${zone.averageRentArs.toLocaleString('es-AR')}/mes). Las ofertas "demasiado buenas para ser reales" son el principal anzuelo para pedir señas rápidas.`,
         riskPoints: 34,
-        evidenceDetail: `Z-Score zonal: ${zScore}σ · Banda razonable en ${zone.neighborhood}: $${zone.minReasonableArs.toLocaleString('es-AR')} – $${zone.maxReasonableArs.toLocaleString('es-AR')}`,
+        evidenceDetail: `Z-Score zonal: ${zScore}σ · Banda razonable en ${zone.neighborhood}: $${zone.minReasonableArs.toLocaleString('es-AR')} – $${zone.maxReasonableArs.toLocaleString('es-AR')}${sourceDetail}`,
       });
     } else if (isModeratelyLow) {
       findings.push({
@@ -59,7 +92,7 @@ export class ZonePriceBiService {
         title: `Precio ${Math.abs(deviationPercent)}% inferior a la media de ${zone.neighborhood}`,
         description: `El valor mensual ($${publishedRent.toLocaleString('es-AR')}) se ubica por debajo del rango habitual de ${zone.neighborhood} ($${zone.averageRentArs.toLocaleString('es-AR')}). Conviene extremar la validación de identidad antes de señar.`,
         riskPoints: 16,
-        evidenceDetail: `Z-Score zonal: ${zScore}σ`,
+        evidenceDetail: `Z-Score zonal: ${zScore}σ${sourceDetail}`,
       });
     } else {
       findings.push({
@@ -69,20 +102,11 @@ export class ZonePriceBiService {
         title: `Precio alineado con el promedio de mercado en ${zone.neighborhood}`,
         description: `El monto publicado ($${publishedRent.toLocaleString('es-AR')}/mes) presenta una variación de ${deviationPercent > 0 ? `+${deviationPercent}` : deviationPercent}% respecto al promedio de ${zone.neighborhood} ($${zone.averageRentArs.toLocaleString('es-AR')}/mes), dentro de parámetros normales.`,
         riskPoints: 0,
-        evidenceDetail: `Z-Score zonal: ${zScore}σ · Polo universitario: ${zone.universityHub}`,
+        evidenceDetail: `Z-Score zonal: ${zScore}σ · Polo universitario: ${zone.universityHub}${sourceDetail}`,
       });
     }
 
-    if (input.requestsAdvanceBeforeVisit && deposit > 0) {
-      findings.push({
-        id: 'bi-advance-without-visit',
-        category: 'zone_price_bi',
-        severity: isExcessiveDeposit ? 'critical' : 'warning',
-        title: 'Exige transferencia de seña por adelantado sin permitir visita previa',
-        description: `Solicita $${deposit.toLocaleString('es-AR')} (${depositToRentRatioPercent}% del alquiler mensual) antes de mostrar la propiedad o permitir que un conocido la visite. Este patrón concentra la mayoría de las estafas al inicio del cuatrimestre.`,
-        riskPoints: isExcessiveDeposit ? 24 : 15,
-      });
-    }
+    this.appendAdvanceWithoutVisit(findings, input, deposit, isExcessiveDeposit, depositToRentRatioPercent);
 
     return {
       comparison: {
@@ -98,5 +122,24 @@ export class ZonePriceBiService {
       },
       findings,
     };
+  }
+
+  private appendAdvanceWithoutVisit(
+    findings: VerificationFinding[],
+    input: ListingInput,
+    deposit: number,
+    isExcessiveDeposit: boolean,
+    depositToRentRatioPercent: number
+  ): void {
+    if (input.requestsAdvanceBeforeVisit && deposit > 0) {
+      findings.push({
+        id: 'bi-advance-without-visit',
+        category: 'zone_price_bi',
+        severity: isExcessiveDeposit ? 'critical' : 'warning',
+        title: 'Exige transferencia de seña por adelantado sin permitir visita previa',
+        description: `Solicita $${deposit.toLocaleString('es-AR')} (${depositToRentRatioPercent}% del alquiler mensual) antes de mostrar la propiedad o permitir que un conocido la visite. Este patrón concentra la mayoría de las estafas al inicio del cuatrimestre.`,
+        riskPoints: isExcessiveDeposit ? 24 : 15,
+      });
+    }
   }
 }

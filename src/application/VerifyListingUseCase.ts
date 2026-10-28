@@ -1,6 +1,7 @@
 import {
   FraudDirectoryEntry,
   KnownImageSignature,
+  MarketPriceData,
   PhotoSighting,
   ListingInput,
   RecommendationType,
@@ -13,6 +14,7 @@ import { DataQualityValidator } from '../domain/services/DataQualityValidator';
 import { IdentityCbuMatcher } from '../domain/services/IdentityCbuMatcher';
 import { ImageMiningService } from '../domain/services/ImageMiningService';
 import { ZonePriceBiService } from '../domain/services/ZonePriceBiService';
+import { resolvePriceBenchmark } from './ResolvePriceBenchmark';
 
 export interface VerificationDependencies {
   zones: ZoneBenchmark[];
@@ -22,6 +24,8 @@ export interface VerificationDependencies {
   inputIdentifierHashes?: InputIdentifierHashes;
   /** Otras verificaciones con la misma foto (índice colaborativo de huellas). */
   photoSightings?: PhotoSighting[];
+  /** Índices de mercado para monoambientes y 2 ambientes (las habitaciones usan la zona). */
+  marketPrices?: MarketPriceData;
 }
 
 export class VerifyListingUseCase {
@@ -34,8 +38,11 @@ export class VerifyListingUseCase {
     input: ListingInput,
     deps: VerificationDependencies
   ): VerificationResult {
-    const zone =
-      deps.zones.find((z) => z.id === input.zoneId) ?? deps.zones[0];
+    const zone = resolvePriceBenchmark(
+      deps.zones.find((z) => z.id === input.zoneId) ?? deps.zones[0],
+      input.propertyType,
+      deps.marketPrices
+    );
 
     // Paso 0: Control de calidad de los datos (Pantalla 4)
     const qualityCheck = this.qualityValidator.validate(input);
