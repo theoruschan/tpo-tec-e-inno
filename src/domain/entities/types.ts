@@ -14,7 +14,9 @@ export type ScreenId =
   | 'screen-8-report'
   | 'view-history'
   | 'view-directory'
-  | 'view-experiment';
+  | 'view-experiment'
+  | 'view-pilot'
+  | 'view-admin';
 
 export type VerdictType = 'Anuncio sospechoso' | 'Verificado' | 'Sin datos suficientes';
 

@@ -28,7 +28,9 @@ import { BrowserImageHasher } from './infrastructure/image/BrowserImageHasher';
 import { TesseractImageTextReader } from './infrastructure/ocr/TesseractImageTextReader';
 import { JsPdfReportExporter } from './infrastructure/report/JsPdfReportExporter';
 import { LocalRepository } from './infrastructure/storage/LocalRepository';
+import { createPilotFeedbackRepository } from './infrastructure/createPilotRepositories';
 import { Navbar } from './presentation/components/Navbar';
+import { PilotBanner } from './presentation/components/PilotBanner';
 import {
   Screen1Home,
   Screen2Instructions,
@@ -40,6 +42,9 @@ const loadInputAndQuality = () => import('./presentation/screens/Screen3InputAnd
 const loadProcessingAndResult = () => import('./presentation/screens/Screen5ProcessingAnd6Result');
 const loadDetailsAndReport = () => import('./presentation/screens/Screen7DetailsAnd8Report');
 
+const PilotInfoView = lazy(() =>
+  import('./presentation/screens/PilotInfoView').then((m) => ({ default: m.PilotInfoView }))
+);
 const HistoryView = lazy(() => loadAuxiliary().then((m) => ({ default: m.HistoryView })));
 const DirectoryView = lazy(() => loadAuxiliary().then((m) => ({ default: m.DirectoryView })));
 const ExperimentBenchmarkView = lazy(() =>
@@ -70,6 +75,7 @@ const verifierUseCase = new VerifyListingUseCase();
 const qualityValidator = new DataQualityValidator();
 const fraudRepository = createFraudDirectoryRepository(import.meta.env);
 const photoSightingRepository = createPhotoSightingRepository(import.meta.env);
+const pilotFeedbackRepository = createPilotFeedbackRepository(import.meta.env);
 const benchmarkUseCase = new RunExperimentBenchmarkUseCase();
 const imageHasher = new BrowserImageHasher();
 const pdfExporter = new JsPdfReportExporter();
@@ -224,6 +230,8 @@ export const App: React.FC = () => {
         directoryCount={fraudDirectory.length}
       />
 
+      <PilotBanner onOpenInfo={() => setCurrentScreen('view-pilot')} />
+
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
         <Suspense fallback={<ScreenFallback />}>
         {currentScreen === 'screen-1-home' && (
@@ -282,7 +290,12 @@ export const App: React.FC = () => {
             onViewDetails={() => setCurrentScreen('screen-7-details')}
             onViewReport={() => setCurrentScreen('screen-8-report')}
             onNewVerification={() => setCurrentScreen('screen-3-input')}
+            feedbackRepository={pilotFeedbackRepository}
           />
+        )}
+
+        {currentScreen === 'view-pilot' && (
+          <PilotInfoView onStart={() => setCurrentScreen('screen-2-instructions')} />
         )}
 
         {currentScreen === 'screen-7-details' && (
@@ -348,7 +361,14 @@ export const App: React.FC = () => {
             Tendencias Tecnológicas · Grupo 12 (Fernández, Lecuenis, Ruschanoff)
           </span>
           <span>
-            Motor de Verificación Preventiva (Data Mining + BI + Directorio CBU)
+            Motor de Verificación Preventiva (Data Mining + BI + Directorio CBU) ·{' '}
+            <button
+              type="button"
+              onClick={() => setCurrentScreen('view-pilot')}
+              className="font-semibold underline underline-offset-2"
+            >
+              Condiciones del piloto
+            </button>
           </span>
         </div>
       </footer>

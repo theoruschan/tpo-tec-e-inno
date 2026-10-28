@@ -10,6 +10,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { VerificationResult } from '../../domain/entities/types';
+import { PilotFeedbackRepository } from '../../domain/ports/PilotFeedbackRepository';
+import { FeedbackCard } from '../components/FeedbackCard';
 
 interface Screen5ProcessingProps {
   onComplete: () => void;
@@ -131,6 +133,8 @@ interface Screen6ResultProps {
   onViewDetails: () => void;
   onViewReport: () => void;
   onNewVerification: () => void;
+  /** Si se pasa y está habilitado, se muestra el formulario de feedback del piloto. */
+  feedbackRepository?: PilotFeedbackRepository;
 }
 
 export const Screen6Result: React.FC<Screen6ResultProps> = ({
@@ -138,6 +142,7 @@ export const Screen6Result: React.FC<Screen6ResultProps> = ({
   onViewDetails,
   onViewReport,
   onNewVerification,
+  feedbackRepository,
 }) => {
   const isSuspicious = result.verdict === 'Anuncio sospechoso';
   const isVerified = result.verdict === 'Verificado';
@@ -250,6 +255,10 @@ export const Screen6Result: React.FC<Screen6ResultProps> = ({
           </button>
         </div>
       </div>
+
+      {feedbackRepository?.enabled && (
+        <FeedbackCard key={result.id} result={result} repository={feedbackRepository} />
+      )}
     </div>
   );
 };
