@@ -20,6 +20,19 @@ export interface PendingReport {
   reportsForIdentifier: number;
 }
 
+/** Una entrada visible hoy en el directorio público (un identificador, agrupando sus reportes). */
+export interface PublishedEntry {
+  /** Clave estable para dar de baja (hash del identificador, nunca el valor en claro). */
+  entryKey: string;
+  identifierMasked: string | null;
+  phoneMasked: string | null;
+  city: string;
+  reportsCount: number;
+  approvedCount: number;
+  reason: string;
+  lastReportedAt: string;
+}
+
 export interface FeedbackRow {
   id: string;
   createdAt: string;
@@ -61,6 +74,9 @@ export interface AdminRepository {
   currentEmail(): string | null;
   listPendingReports(): Promise<PendingReport[]>;
   moderateReport(id: string, status: 'approved' | 'rejected'): Promise<boolean>;
+  listPublishedEntries(): Promise<PublishedEntry[]>;
+  /** Rechaza todos los reportes del identificador (desaparece del directorio). Devuelve cuántos. */
+  takedownEntry(entryKey: string): Promise<number>;
   listFeedback(limit?: number): Promise<FeedbackRow[]>;
   stats(): Promise<AdminStats>;
 }

@@ -50,7 +50,7 @@ pnpm install
 pnpm dev          # servidor de desarrollo
 pnpm lint         # ESLint
 pnpm typecheck    # TypeScript estricto
-pnpm test         # Vitest (181 tests)
+pnpm test         # Vitest (186 tests)
 pnpm build        # build de producción en dist/
 pnpm preview      # sirve dist/ localmente
 ```

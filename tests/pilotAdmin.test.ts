@@ -117,6 +117,33 @@ describe('SupabaseAdminRepository — funciones admin', () => {
     expect(JSON.parse(init.body as string)).toEqual({ p_id: 'r1', p_status: 'rejected' });
   });
 
+  it('lista las entradas publicadas y da de baja por clave (manda p_entry_key con el JWT del admin)', async () => {
+    const { repo, fetchMock } = repoWith((url) =>
+      url.endsWith('admin_takedown_entry')
+        ? json(7)
+        : json([
+            {
+              entry_key: 'hash-key', identifier_masked: 'alq•••.mp', phone_masked: '•••• 9918',
+              city: 'CABA', reports_count: '7', approved_count: '7', reason: 'Pide seña',
+              last_reported_at: '2026-08-29',
+            },
+          ])
+    );
+    await repo.signIn('admin@ejemplo.com', 'x');
+
+    const entries = await repo.listPublishedEntries();
+    expect(entries[0]).toEqual({
+      entryKey: 'hash-key', identifierMasked: 'alq•••.mp', phoneMasked: '•••• 9918', city: 'CABA',
+      reportsCount: 7, approvedCount: 7, reason: 'Pide seña', lastReportedAt: '2026-08-29',
+    });
+
+    expect(await repo.takedownEntry('hash-key')).toBe(7);
+    const [url, init] = fetchMock.mock.calls[2] as unknown as [string, RequestInit];
+    expect(url).toBe('https://demo.supabase.co/rest/v1/rpc/admin_takedown_entry');
+    expect(JSON.parse(init.body as string)).toEqual({ p_entry_key: 'hash-key' });
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer jwt-del-admin');
+  });
+
   it('mapea las estadísticas y el feedback', async () => {
     const { repo } = repoWith((url) =>
       url.endsWith('admin_stats')

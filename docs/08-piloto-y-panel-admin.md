@@ -20,6 +20,7 @@ Una prueba con un grupo reducido de estudiantes, con el sitio abierto por link (
 - **Login:** email + contraseña de Supabase Auth. La sesión vive solo en memoria: recargar la página, salir del panel o vencer el token (1 hora) la cierra.
 - **Qué incluye:**
   - **Reportes pendientes:** ver el motivo, cuántos dispositivos distintos lo reportaron y **aprobar o rechazar**. Aprobar publica el motivo en el directorio; el panel lo advierte y pide no aprobar motivos con datos personales de terceros.
+  - **Publicados:** las entradas que hoy ve cualquiera en el directorio, con **Dar de baja** (confirmación en dos pasos). La baja rechaza todos los reportes de ese identificador y lo saca del directorio al instante. Cada moderación y cada baja queda registrada en `private.admin_actions` (quién, qué y cuándo; no es visible por la API).
   - **Feedback:** tabla con lo que respondieron, con las "estafas no detectadas" resaltadas, y botón **Descargar CSV** (las celdas que empiezan con `= + - @` se neutralizan para que Excel no las ejecute como fórmula).
   - **Resumen:** reportes por estado, fotos en el índice, feedback y resultados, y el contador de estafas que dejó pasar el motor.
 
@@ -56,13 +57,7 @@ Para **quitar** un admin: `delete from private.admins where user_id = '<uuid>';`
 ## Operación diaria del piloto
 
 - **Moderar:** entrar al panel, revisar los reportes pendientes y aprobar o rechazar. Nada se publica sin revisión salvo que **3 dispositivos distintos** reporten el mismo identificador (regla de [docs/06](./06-directorio-colaborativo-supabase.md)).
-- **Dar de baja un reporte ya aprobado** (si alguien reclama): el panel todavía no lo hace; se hace por SQL:
-
-```sql
--- Buscar por versión parcial (ej. 'alq•••.mp')
-select id, identifier_masked, city, reason, status from public.fraud_reports where identifier_masked = 'alq•••.mp';
-update public.fraud_reports set status = 'rejected', reviewed_at = now() where id = '<uuid>';
-```
+- **Dar de baja una entrada ya publicada** (si alguien reclama o el motivo trae datos personales): pestaña **Publicados** → *Dar de baja* → *Confirmar baja*. Para ver el registro de acciones (SQL Editor): `select * from private.admin_actions order by created_at desc;`
 
 - **Mirar el feedback** una vez por semana y revisar cada "estafa no detectada".
 - **Supabase gratis se pausa tras 7 días sin actividad:** si el piloto tiene días parados, entrá al sitio o al dashboard antes de que lo usen.
@@ -71,5 +66,11 @@ update public.fraud_reports set status = 'rejected', reviewed_at = now() where i
 
 - Con pocos participantes los porcentajes del resumen se mueven mucho: mirar siempre el conteo.
 - Quien ya usó la app antes tiene un id de dispositivo distinto en otro navegador: un mismo participante puede contar más de una vez.
-- El panel no permite (todavía) revisar fotos con alertas de pocas fuentes ni dar de baja reportes aprobados.
+- El panel no permite (todavía) revisar fotos con alertas de pocas fuentes.
+- Una entrada dada de baja puede volver a aparecer si alguien la reporta de nuevo (empieza otra vez como pendiente; lo decide la moderación).
+- El registro de acciones guarda el id del admin, no su email.
 - Los términos y la política de datos son un borrador de piloto, **no asesoramiento legal**. Antes de abrir la app al público hay que revisarlos con alguien que sepa (Ley 25.326, registro de la base ante la AAIP, proceso de reclamo).
+
+## Mantener Supabase activo
+
+La Action [`keep-supabase-alive.yml`](../.github/workflows/keep-supabase-alive.yml) consulta el directorio público los lunes y jueves. Si no recibe HTTP 200 (por ejemplo, el proyecto ya está pausado), falla y GitHub avisa por mail. **No hay garantía oficial de que una consulta evite la pausa del plan gratis**: si el piloto queda parado mucho tiempo, conviene entrar al dashboard de Supabase. Se puede lanzar a mano desde la pestaña Actions.

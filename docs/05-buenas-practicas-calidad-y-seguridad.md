@@ -72,6 +72,8 @@ Cambios de accesibilidad que salieron de esa auditoría:
 - `<dialog>` de soporte: `aria-labelledby`/`aria-describedby`, foco inicial en el primer campo, retorno del foco al botón que lo abrió y contraste del botón cerrar.
 - Contraste de textos secundarios (pasos pendientes, fechas del historial) y orden de encabezados.
 
+**Re-medición (28/10/2026), con OCR, precios, piloto y panel admin ya desplegados** (3 corridas Lighthouse móvil sobre la home): Performance 97 / 98 / 99, Accessibility 100, Best Practices 100, SEO 100; LCP 2,0–2,3 s (antes ~1,6 s), TBT 50–90 ms, CLS 0. El JS inicial comprimido pasó de ~95 a ~100 kB. Lighthouse no pudo identificar el elemento del LCP en esas corridas (falló un recolector interno), así que no se atribuyó la diferencia a un cambio concreto. Axe: las pantallas nuevas (banner, condiciones, feedback, login admin) en 0 violaciones.
+
 **Rendimiento:** las pantallas 3 a 8 y las vistas auxiliares se cargan con `React.lazy` (un chunk por archivo) y jsPDF se descarga solo al pedir el PDF. Bundle inicial: 380 kB → 310 kB (gzip 110 → 95 kB).
 
 **Seguridad del deploy:** CSP sin `unsafe-eval` ni scripts externos, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY` y `Permissions-Policy` restrictiva (`vercel.json`).

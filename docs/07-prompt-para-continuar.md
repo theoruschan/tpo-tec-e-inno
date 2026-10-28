@@ -17,7 +17,7 @@ alquiler para estudiantes antes de pagar la seña. Ya está desplegada y funcion
 Antes de tocar código
 1. Leé README.md (tabla "Qué es real y qué no"), docs/03, docs/04, docs/06 y este archivo.
 2. Corré: corepack pnpm@10.15.0 install && corepack pnpm@10.15.0 lint && corepack pnpm@10.15.0 typecheck
-   && corepack pnpm@10.15.0 test && corepack pnpm@10.15.0 build. Línea base: 181 tests, build OK.
+   && corepack pnpm@10.15.0 test && corepack pnpm@10.15.0 build. Línea base: 186 tests, build OK.
    (No hay pnpm global; pnpm 12 rechaza el lockfile, por eso pnpm 10.15.0 vía corepack.)
 3. Si algo no está claro, preguntame. No asumas.
 
@@ -49,8 +49,8 @@ Pendiente (en este orden, salvo que te diga otra cosa)
    campos lee bien y ajustá ListingTextExtractor con tests nuevos por cada caso real.
 3. (PARCIAL 28/10/2026) Piloto y panel admin hechos (docs/08): aviso, condiciones, feedback y moderación
    de reportes en /#admin. El usuario admin ya existe y está habilitado (login real probado en producción el 28/10/2026; la contraseña hay que cambiarla por una fuerte antes de compartir el link). Falta: login para reportar y
-   registrar fotos, rate limit por IP (Edge Function), revisar alertas de fotos con pocas fuentes y dar de
-   baja reportes ya aprobados desde el panel (hoy es por SQL).
+   registrar fotos, rate limit por IP (Edge Function), revisar alertas de fotos con pocas fuentes (la baja de reportes ya publicados
+   se resolvió el 28/10/2026 desde la pestaña Publicados del panel).
 4. Precio de habitaciones: hoy es una estimación del equipo. Opciones: API de MercadoLibre (requiere que
    registre una app en el DevCenter; credenciales solo como secretos) o calcular medianas con datos
    de la comunidad excluyendo anuncios marcados como sospechosos. Preguntame antes de elegir.

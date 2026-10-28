@@ -5,6 +5,7 @@ import {
   AdminStats,
   FeedbackRow,
   PendingReport,
+  PublishedEntry,
 } from '../../domain/ports/AdminRepository';
 import { feedbackToCsv } from '../utils/feedbackCsv';
 import { formatDateTime } from '../utils/formatDateTime';
@@ -15,7 +16,7 @@ interface AdminViewProps {
   onExit: () => void;
 }
 
-type Tab = 'reports' | 'feedback' | 'summary';
+type Tab = 'reports' | 'published' | 'feedback' | 'summary';
 
 const USEFUL_LABELS = { yes: 'Sí', partly: 'Más o menos', no: 'No' } as const;
 const OUTCOME_LABELS = {
@@ -46,6 +47,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ repository, onExit }) => {
 
   const [tab, setTab] = useState<Tab>('reports');
   const [reports, setReports] = useState<PendingReport[]>([]);
+  const [published, setPublished] = useState<PublishedEntry[]>([]);
+  const [confirmingTakedown, setConfirmingTakedown] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loadError, setLoadError] = useState('');
@@ -56,6 +59,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ repository, onExit }) => {
       repository?.signOut();
       setEmail(null);
       setReports([]);
+      setPublished([]);
       setFeedback([]);
       setStats(null);
       setAuthError(message);
@@ -67,12 +71,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ repository, onExit }) => {
     if (!repository) return;
     setLoadError('');
     try {
-      const [pending, rows, summary] = await Promise.all([
+      const [pending, entries, rows, summary] = await Promise.all([
         repository.listPendingReports(),
+        repository.listPublishedEntries(),
         repository.listFeedback(500),
         repository.stats(),
       ]);
       setReports(pending);
+      setPublished(entries);
       setFeedback(rows);
       setStats(summary);
     } catch (error) {
@@ -132,6 +138,21 @@ export const AdminView: React.FC<AdminViewProps> = ({ repository, onExit }) => {
     } catch (error) {
       if (error instanceof AdminAuthError) backToLogin(error.message);
       else setLoadError('No se pudo guardar la decisión. Probá de nuevo.');
+    } finally {
+      setModerating(null);
+    }
+  };
+
+  const handleTakedown = async (entry: PublishedEntry) => {
+    setModerating(entry.entryKey);
+    setLoadError('');
+    try {
+      await repository.takedownEntry(entry.entryKey);
+      setConfirmingTakedown(null);
+      await loadAll();
+    } catch (error) {
+      if (error instanceof AdminAuthError) backToLogin(error.message);
+      else setLoadError('No se pudo dar de baja la entrada. Probá de nuevo.');
     } finally {
       setModerating(null);
     }
@@ -216,6 +237,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ repository, onExit }) => {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'reports', label: `Reportes pendientes (${reports.length})` },
+    { id: 'published', label: `Publicados (${published.length})` },
     { id: 'feedback', label: `Feedback (${feedback.length})` },
     { id: 'summary', label: 'Resumen' },
   ];
@@ -313,6 +335,71 @@ export const AdminView: React.FC<AdminViewProps> = ({ repository, onExit }) => {
                 >
                   Rechazar
                 </button>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {tab === 'published' && (
+        <section aria-label="Entradas publicadas" className="space-y-3">
+          <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-950">
+            Son las entradas que hoy ve cualquier persona en el directorio. <strong>Dar de baja</strong>{' '}
+            rechaza todos los reportes de ese identificador y lo saca del directorio al instante; queda
+            registrado quién lo hizo. Usalo si alguien reclama o si el motivo incluye datos personales.
+          </p>
+          {published.length === 0 && (
+            <p className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+              No hay entradas publicadas.
+            </p>
+          )}
+          {published.map((entry) => (
+            <article key={entry.entryKey} className="rounded-2xl border border-slate-200 bg-white p-4 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-lg bg-rose-100 px-2.5 py-1 font-mono font-bold text-rose-900">
+                  {entry.identifierMasked ?? 'Solo teléfono'}
+                </span>
+                {entry.phoneMasked && <span className="text-slate-600">Tel. {entry.phoneMasked}</span>}
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-semibold text-slate-700">
+                  {entry.city}
+                </span>
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 font-bold text-amber-950">
+                  {entry.reportsCount} {entry.reportsCount === 1 ? 'reporte' : 'reportes'}
+                </span>
+                <span className="text-slate-500">Último: {entry.lastReportedAt}</span>
+              </div>
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-900">{entry.reason}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {confirmingTakedown === entry.entryKey ? (
+                  <>
+                    <span className="font-semibold text-red-800">
+                      ¿Sacar {entry.identifierMasked ?? 'este teléfono'} del directorio?
+                    </span>
+                    <button
+                      type="button"
+                      disabled={moderating === entry.entryKey}
+                      onClick={() => void handleTakedown(entry)}
+                      className="rounded-lg bg-red-700 px-3 py-1.5 font-bold text-white hover:bg-red-800 disabled:opacity-60"
+                    >
+                      Confirmar baja
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingTakedown(null)}
+                      className="rounded-lg px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-100"
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingTakedown(entry.entryKey)}
+                    className="rounded-lg border border-red-300 px-3 py-1.5 font-bold text-red-800 hover:bg-red-50"
+                  >
+                    Dar de baja
+                  </button>
+                )}
               </div>
             </article>
           ))}

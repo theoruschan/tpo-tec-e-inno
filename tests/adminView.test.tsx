@@ -8,6 +8,7 @@ import {
   AdminStats,
   FeedbackRow,
   PendingReport,
+  PublishedEntry,
 } from '../src/domain/ports/AdminRepository';
 import { AdminView } from '../src/presentation/screens/AdminView';
 import { csvCell, feedbackToCsv } from '../src/presentation/utils/feedbackCsv';
@@ -23,6 +24,17 @@ const pending: PendingReport = {
   source: 'Verificación usuario',
   createdAt: '2026-10-28T10:00:00Z',
   reportsForIdentifier: 2,
+};
+
+const published: PublishedEntry = {
+  entryKey: 'hash-alq-key',
+  identifierMasked: 'alq•••.mp',
+  phoneMasked: '•••• 9918',
+  city: 'CABA',
+  reportsCount: 7,
+  approvedCount: 7,
+  reason: 'Pide $120.000 de reserva y bloquea',
+  lastReportedAt: '2026-08-29',
 };
 
 const feedbackRows: FeedbackRow[] = [
@@ -52,6 +64,8 @@ function fakeRepo(overrides: Partial<AdminRepository> = {}): AdminRepository {
     currentEmail: () => email,
     listPendingReports: vi.fn(async () => [pending]),
     moderateReport: vi.fn(async () => true),
+    listPublishedEntries: vi.fn(async () => [published]),
+    takedownEntry: vi.fn(async () => 7),
     listFeedback: vi.fn(async () => feedbackRows),
     stats: vi.fn(async () => stats),
     ...overrides,
@@ -151,6 +165,59 @@ describe('AdminView — moderación', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Aprobar' }));
     expect((await screen.findByRole('alert')).textContent).toContain('No se pudo guardar la decisión');
     expect(screen.getByText('alq•••.mp')).toBeTruthy();
+  });
+});
+
+describe('AdminView — baja de entradas publicadas', () => {
+  async function openPublished(repo: AdminRepository) {
+    await login(repo);
+    await userEvent.click(await screen.findByRole('button', { name: /Publicados \(1\)/ }));
+  }
+
+  it('lista lo que ve el público y avisa que la baja es inmediata y queda registrada', async () => {
+    await openPublished(fakeRepo());
+    expect(screen.getByText('alq•••.mp')).toBeTruthy();
+    expect(screen.getByText('7 reportes')).toBeTruthy();
+    expect(screen.getByText('Pide $120.000 de reserva y bloquea')).toBeTruthy();
+    expect(screen.getByText(/queda\s+registrado quién lo hizo/)).toBeTruthy();
+  });
+
+  it('pide confirmación en dos pasos: el primer clic no da de baja nada', async () => {
+    const repo = fakeRepo();
+    await openPublished(repo);
+    await userEvent.click(screen.getByRole('button', { name: 'Dar de baja' }));
+    expect(repo.takedownEntry).not.toHaveBeenCalled();
+    expect(screen.getByText('¿Sacar alq•••.mp del directorio?')).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(repo.takedownEntry).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Dar de baja' })).toBeTruthy();
+  });
+
+  it('confirmar llama a la baja con la clave y recarga la lista', async () => {
+    const list = vi.fn().mockResolvedValueOnce([published]).mockResolvedValue([]);
+    const repo = fakeRepo({ listPublishedEntries: list });
+    await openPublished(repo);
+    await userEvent.click(screen.getByRole('button', { name: 'Dar de baja' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar baja' }));
+    expect(repo.takedownEntry).toHaveBeenCalledWith('hash-alq-key');
+    expect(await screen.findByText('No hay entradas publicadas.')).toBeTruthy();
+  });
+
+  it('si falla la baja avisa y mantiene la entrada; si vence la sesión vuelve al login', async () => {
+    const failing = fakeRepo({ takedownEntry: vi.fn(async () => { throw new Error('boom'); }) });
+    await openPublished(failing);
+    await userEvent.click(screen.getByRole('button', { name: 'Dar de baja' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar baja' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('No se pudo dar de baja');
+    expect(screen.getByText('alq•••.mp')).toBeTruthy();
+
+    cleanup();
+    const expired = fakeRepo({ takedownEntry: vi.fn(async () => { throw new AdminAuthError('La sesión venció.'); }) });
+    await openPublished(expired);
+    await userEvent.click(screen.getByRole('button', { name: 'Dar de baja' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar baja' }));
+    expect((await screen.findByRole('alert')).textContent).toBe('La sesión venció.');
+    expect(screen.getByRole('button', { name: 'Ingresar' })).toBeTruthy();
   });
 });
 

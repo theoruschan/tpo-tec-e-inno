@@ -4,6 +4,7 @@ import {
   AdminStats,
   FeedbackRow,
   PendingReport,
+  PublishedEntry,
 } from '../../domain/ports/AdminRepository';
 import { callSupabaseRpc, SupabaseRpcError } from './supabaseRpc';
 
@@ -23,6 +24,17 @@ interface PendingRow {
   source: string;
   created_at: string;
   reports_for_identifier: number | string;
+}
+
+interface PublishedRow {
+  entry_key: string;
+  identifier_masked: string | null;
+  phone_masked: string | null;
+  city: string;
+  reports_count: number | string;
+  approved_count: number | string;
+  reason: string;
+  last_reported_at: string;
 }
 
 interface FeedbackDbRow {
@@ -110,6 +122,24 @@ export class SupabaseAdminRepository implements AdminRepository {
 
   public moderateReport(id: string, status: 'approved' | 'rejected'): Promise<boolean> {
     return this.rpc<boolean>('admin_moderate_report', { p_id: id, p_status: status });
+  }
+
+  public async listPublishedEntries(): Promise<PublishedEntry[]> {
+    const rows = await this.rpc<PublishedRow[]>('admin_list_published_entries', {});
+    return rows.map((row) => ({
+      entryKey: row.entry_key,
+      identifierMasked: row.identifier_masked,
+      phoneMasked: row.phone_masked,
+      city: row.city,
+      reportsCount: Number(row.reports_count),
+      approvedCount: Number(row.approved_count),
+      reason: row.reason,
+      lastReportedAt: row.last_reported_at,
+    }));
+  }
+
+  public takedownEntry(entryKey: string): Promise<number> {
+    return this.rpc<number>('admin_takedown_entry', { p_entry_key: entryKey });
   }
 
   public async listFeedback(limit = 100): Promise<FeedbackRow[]> {
