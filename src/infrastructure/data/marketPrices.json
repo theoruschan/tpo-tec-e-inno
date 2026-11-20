@@ -1,15 +1,15 @@
 {
-  "updatedAt": "2026-10-27",
+  "updatedAt": "2026-11-20",
   "sources": [
     {
       "id": "zonaprop-caba",
       "city": "CABA",
       "label": "Zonaprop Index CABA",
-      "period": "2026-09",
-      "url": "https://www.zonaprop.com.ar/blog/wp-content/uploads/2026/10/INDEX_CABA_REPORTE_2026-09.pdf",
+      "period": "2026-10",
+      "url": "https://www.zonaprop.com.ar/blog/wp-content/uploads/2026/11/INDEX_CABA_REPORTE_2026-10.pdf",
       "prices": {
-        "studio": 779370,
-        "two_rooms": 898154
+        "studio": 786735,
+        "two_rooms": 909058
       }
     },
     {
